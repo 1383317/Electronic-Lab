@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>شبیه‌ساز یکسوسازهای نیم‌موج و تمام‌موج</title>
+  
+  <script src="js/chart.umd.js"></script>
+  
+  <style>
+    @font-face {
+      font-family: 'XB Niloofar';
+      src: url('Fonts/XB Niloofar.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    :root {
+      --bg-color: #0f172a;
+      --panel-bg: #020617;
+      --card-bg: #1e293b;
+      --accent: #38bdf8;
+      --accent-soft: #0ea5e9;
+      --text-main: #e5e7eb;
+      --muted: #9ca3af;
+      --danger: #f97373;
+      --success: #22c55e;
+      --warning: #facc15;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 20px 10px 40px;
+      font-family: 'XB Niloofar', Tahoma, sans-serif;
+      background: radial-gradient(circle at top, #1f2937 0, #020617 55%, #020617 100%);
+      color: var(--text-main);
+      direction: rtl;
+      overflow-x: hidden;
+    }
+
+    h1, h2, h3, h4 { margin: 0; font-weight: 600; }
+
+    .page-header { text-align: center; margin-bottom: 20px; margin-top: 30px; }
+    .page-header h1 { font-size: 22px; color: #f8fafc; }
+    .page-header .subtitle { font-size: 13px; color: var(--muted); margin-top: 5px; }
+
+    /* استایل استاندارد برای زیروندهای دقیق */
+    sub { font-size: 0.72em; vertical-align: sub; line-height: 0; }
+
+    /* ===== CREDITS STYLE (MATCHING TRANSISTOR SIM) ===== */
+    .creator-credit {
+      position: absolute; top: 15px; left: 20px; display: flex; align-items: center; gap: 10px;
+      background: rgba(15,23,42,0.7); padding: 6px 14px; border-radius: 10px; border: 1px solid #1f2937; z-index: 1000;
+    }
+    .creator-credit img { height: 35px; width: auto; object-fit: contain; }
+    .creator-credit span { color: #9ca3af; font-size: 13px; font-family: monospace; direction: ltr; font-weight: bold; }
+    
+    .lab-info {
+      position: absolute; top: 12px; right: 20px; display: flex; flex-direction: column; align-items: center;
+      background: rgba(15,23,42,0.7); padding: 5px 15px; border-radius: 10px; border: 1px solid #1f2937;
+      text-align: center; z-index: 1000;
+    }
+    .lab-info .title { color: #f8fafc; font-size: 16px; font-weight: bold; }
+    .lab-info .prof { color: #9ca3af; font-size: 11px; margin-top: 2px; }
+
+    .main-container {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      max-width: 850px; 
+      margin: 0 auto; 
+    }
+
+    .card {
+      background: radial-gradient(circle at top left, #020617 0, #020617 45%, #020617 100%);
+      border-radius: 14px;
+      border: 1px solid #1f2937;
+      padding: 18px;
+      box-shadow: 0 14px 28px rgba(15, 23, 42, 0.85);
+    }
+
+    .card-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 15px; }
+    .card-header h3 { font-size: 16px; color: #f8fafc; }
+    .card-header .sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+    .controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 13px; margin-bottom: 15px;}
+    .control-group { display: flex; flex-direction: column; gap: 6px; }
+    .control-label { color: var(--muted); font-size: 12px; display: flex; justify-content: space-between;}
+    
+    select, input[type="number"] {
+      width: 100%; padding: 8px 12px; border-radius: 8px; background: #0f172a; color: var(--accent);
+      border: 1px solid #1f2937; outline: none; font-family: inherit; font-size: 13px;
+    }
+
+    input[type="range"] {
+      width: 100%; -webkit-appearance: none; height: 5px; border-radius: 999px; background: #0f172a; outline: none; direction: ltr; margin-top: 10px;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--accent);
+      border: 2px solid #0ea5e9; box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25); cursor: pointer;
+    }
+
+    .live-values { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    .live-box {
+      background: #0f172a; border-radius: 10px; border: 1px solid #1e293b; padding: 10px; 
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+    }
+    .live-label { color: var(--muted); font-size: 11px; text-align: center; }
+    .live-value { font-variant-numeric: tabular-nums; direction: ltr; font-size: 16px; font-weight: bold; }
+    
+    .live-value.v-in { color: var(--accent); }
+    .live-value.v-dc { color: var(--success); }
+    .live-value.v-rms { color: var(--warning); }
+    .live-value.ripple { color: var(--danger); }
+
+    .canvas-container {
+      background: radial-gradient(circle at center, #0f172a 0, #020617 100%);
+      border-radius: 12px; border: 1px solid #1e293b;
+      box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.8);
+      padding: 10px; position: relative; display: flex; justify-content: center; align-items: center;
+      margin-bottom: 15px; height: 240px;
+    }
+    #circuitCanvas { display: block; max-width: 100%; height: 100%; }
+
+    .chart-box {
+      height: 320px; background: #020617; border-radius: 12px; border: 1px solid #111827; 
+      padding: 15px; display: flex; flex-direction: column; position: relative;
+    }
+    canvas.chart { flex: 1; width: 100% !important; height: 100% !important; }
+
+    .chart-legend { display: flex; gap: 15px; justify-content: center; margin-bottom: 10px; font-size: 12px;}
+    .legend-item { display: flex; align-items: center; gap: 6px; color: #9ca3af;}
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+    .btn {
+      border: 1px solid var(--accent); background: radial-gradient(circle at top, var(--accent-soft) 0, #0284c7 100%);
+      color: #fff; border-radius: 8px; padding: 8px 16px; font-size: 13px; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: 0.2s; font-family: inherit; font-weight: bold;
+    }
+    .btn:hover { opacity: 0.9; box-shadow: 0 0 10px rgba(56, 189, 248, 0.4); }
+    .btn.secondary { border-color: #4b5563; background: #1f2937; color: #e5e7eb; }
+    .btn.secondary:hover { background: #374151; box-shadow: none; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); }
+
+    .table-wrapper {
+      max-height: 250px; overflow-y: auto; border-radius: 8px; border: 1px solid #1f2937; background: #0f172a; margin-bottom: 15px;
+    }
+    .table-wrapper::-webkit-scrollbar { width: 6px; }
+    .table-wrapper::-webkit-scrollbar-track { background: #020617; }
+    .table-wrapper::-webkit-scrollbar-thumb { background: var(--accent-soft); border-radius: 10px; }
+
+    table.data-table { width: 100%; border-collapse: collapse; text-align: center; }
+    table.data-table th, table.data-table td { border-bottom: 1px solid #1e293b; padding: 8px; font-variant-numeric: tabular-nums; font-size: 13px;}
+    table.data-table th { color: var(--accent); background: #020617; position: sticky; top: 0; z-index: 10; font-weight: normal;}
+    table.data-table td { color: #e5e7eb; direction: ltr; }
+    table.data-table tbody tr:hover { background: rgba(56, 189, 248, 0.1); }
+
+    .theory-box p { font-size: 13px; color: #9ca3af; line-height: 1.8; margin: 8px 0; text-align: justify; }
+    .theory-box ul { list-style-type: none; padding-right: 0; margin-top: 10px; }
+    .theory-box ul li { font-size: 13px; color: #d1d5db; line-height: 1.8; position: relative; padding-right: 20px; margin-bottom: 8px; text-align: justify; }
+    .theory-box ul li::before { content: "⚡"; position: absolute; right: 0; top: 2px; font-size: 11px; color: var(--warning); }
+    .theory-section-title { font-size: 15px; font-weight: bold; color: var(--accent); margin-top: 20px; margin-bottom: 8px; border-bottom: 1px solid #1f2937; padding-bottom: 5px;}
+    
+    .formula { font-family: 'Times New Roman', Times, serif; font-style: italic; font-size: 16px; color: var(--success); direction: ltr; display: inline-block;}
+    .math-block { text-align: center; margin: 10px 0; background: #0f172a; padding: 10px; border-radius: 8px; border: 1px dashed #1e293b; }
+
+    .progress-container { margin-top: 15px; }
+    .progress-bar-bg { width: 100%; height: 6px; background: #0f172a; border-radius: 999px; overflow: hidden; margin-top: 5px; border: 1px solid #1e293b;}
+    #sweepProgressBar { width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent), var(--success)); border-radius: 999px; transition: width 0.1s linear; }
+
+    @media (max-width: 650px) {
+        .creator-credit, .lab-info { position: static; margin: 0 auto 10px; justify-content: center; width: max-content; }
+        .controls-grid, .live-values { grid-template-columns: 1fr; }
+        .live-values { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- بخش کردیت‌ها و لوگوی دانشگاه کاملاً مطابق با فایل ترانزیستور -->
+  <div class="creator-credit">
+    <span>credit:@MSR_83</span>
+    <img src="credit/IUST.png" alt="University Logo" onerror="this.style.display='none'">
+  </div>
+  <div class="lab-info">
+    <span class="title">آزمایشگاه الکترونیک</span>
+    <span class="prof">استاد : دکتر دباغ کاشانی</span>
+  </div>
+
+  <div class="page-header">
+    <h1>شبیه‌ساز آزمایشگاه مدارات یکسوساز نیم‌موج و تمام ‌موج</h1>
+    <div class="subtitle">
+      بررسی عملکرد یکسوسازی متناوب و استخراج مشخصه‌های مشخصه خروجی مدار با و بدون فیلتر خازنی<br>
+      <span style="font-size: 0.95em; color: var(--muted);">Half-Wave • Center-Tapped • Bridge Rectifiers</span>
+    </div>
+  </div>
+
+  <div class="main-container">
+    
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h3>تنظیمات مدار و منبع تغذیه</h3>
+          <div class="sub">نوع یکسوساز، ولتاژ پیک ثانویه ترانس و وضعیت فیلتر را تعیین کنید</div>
+        </div>
+      </div>
+      
+      <div class="canvas-container">
+        <canvas id="circuitCanvas" width="800" height="240"></canvas>
+      </div>
+
+      <div class="controls-grid">
+        <div class="control-group">
+          <label class="control-label">نوع مدار یکسوساز</label>
+          <select id="rectifierType">
+            <option value="HWR">یکسوساز نیم‌موج (HWR)</option>
+            <option value="FWR">تمام‌موج سروسط (FWR)</option>
+            <option value="BR">تمام‌موج پل (Bridge)</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label class="control-label">فیلتر خازنی خروجی</label>
+          <select id="filterType">
+            <option value="NONE">بدون فیلتر خازنی</option>
+            <option value="CAP">با فیلتر (C = 220 µF)</option>
+          </select>
+        </div>
+        <div class="control-group" style="grid-column: 1 / -1;">
+          <label class="control-label">
+            <span>ولتاژ پیک ترانسفورماتور (V<sub>m</sub>)</span>
+            <span id="vmOutput" style="color: var(--accent); font-family: monospace; font-size: 14px;">10.0 V</span>
+          </label>
+          <input type="range" id="vmSlider" min="2" max="20" value="10" step="0.5">
+        </div>
+      </div>
+
+      <div class="live-values">
+        <div class="live-box">
+          <div class="live-label">ولتاژ پیک ورودی</div>
+          <div class="live-value v-in"><span id="lbl_Vm">0.00</span> V</div>
+        </div>
+        <div class="live-box">
+          <div class="live-label">ولتاژ میانگین (V<sub>DC</sub>)</div>
+          <div class="live-value v-dc"><span id="lbl_Vdc">0.00</span> V</div>
+        </div>
+        <div class="live-box">
+          <div class="live-label">ولتاژ مؤثر خروجی (V<sub>RMS</sub>)</div>
+          <div class="live-value v-rms"><span id="lbl_Vrms">0.00</span> V</div>
+        </div>
+        <div class="live-box">
+          <div class="live-label">فاکتور ضربان (r)</div>
+          <div class="live-value ripple"><span id="lbl_Ripple">0.00</span> %</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h3>اسیلوکسوپ دیجیتال (شکل‌موج‌ها)</h3>
+          <div class="sub">نمایش همزمان ولتاژ متناوب ورودی و ولتاژ یکسوشده در خروجی</div>
+        </div>
+      </div>
+      <div class="chart-box">
+        <div class="chart-legend">
+          <div class="legend-item"><div class="legend-dot" style="background: #38bdf8; box-shadow: 0 0 8px #38bdf8;"></div><span>ولتاژ ورودی (V<sub>in</sub>)</span></div>
+          <div class="legend-item"><div class="legend-dot" style="background: #22c55e; box-shadow: 0 0 8px #22c55e;"></div><span>ولتاژ خروجی (V<sub>out</sub>)</span></div>
+        </div>
+        <canvas class="chart" id="oscChart"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h3>ثبت داده‌ها و جاروب ولتاژ (Sweep)</h3>
+          <div class="sub">استخراج خودکار مقادیر مشخصه برای رسم جداول ۱ و ۲ دستورکار</div>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <button class="btn" id="btnSweep">⚡ شروع Sweep خودکار</button>
+            <button class="btn secondary" id="btnClear">🗑 پاک‌کردن</button>
+        </div>
+      </div>
+
+      <div class="progress-container">
+        <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--muted);">
+            <span id="sweepStatus">آماده برای شروع...</span>
+            <span id="sweepPercent">0%</span>
+        </div>
+        <div class="progress-bar-bg">
+            <div id="sweepProgressBar"></div>
+        </div>
+      </div>
+
+      <div class="theory-section-title" style="font-size: 14px; margin-top: 15px;">جدول داده‌ها بر اساس تنظیمات فعلی (با / بدون فیلتر)</div>
+      <div class="table-wrapper">
+        <table class="data-table" id="dataTable">
+          <thead id="tableHead">
+            </thead>
+          <tbody id="tableBody">
+            </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h3>خلاصه روابط و تئوری آزمایش</h3>
+        </div>
+      </div>
+      <div class="theory-box">
+        <div class="theory-section-title">مفاهیم پایه یکسوسازی</div>
+        <ul>
+            <li>برای تولید ولتاژ <span class="formula">DC</span> از ولتاژ متناوب <span class="formula">AC</span> ضروری است که جریان به گونه‌ای جهت‌دهی مجدد شود که یک مؤلفه میانگین دی‌سی تولید کند. سپس تغییرات ناخواسته (ضربان یا ریپل) توسط فیلترها حذف می‌شود.</li>
+        </ul>
+
+        <div class="theory-section-title">۱. مدار یکسوساز نیم‌موج (Half-Wave Rectifier)</div>
+        <p>در مدار یکسوساز نیم‌موج، یک منبع تغذیه اصلی به یک ترانسفورماتور کاهنده متصل می‌شود. عملکرد این مدار به این صورت است که همه نیم‌سیکل‌های مثبت منبع تغذیه از میان دیود می‌گذرند و همه نیم‌سیکل‌های منفی مسدود و حذف می‌شوند. مقدار پیک ولتاژ خروجی به دلیل وجود افت ولتاژ درونی در دو سر دیود، کمتر از ولتاژ ورودی خواهد بود.</p>
+
+        <div class="theory-section-title">۲. مدار یکسوساز تمام‌موج سروسط (Center-Tapped FWR)</div>
+        <p>این مدار از یک ترانسفورماتور دارای سر وسط و دو دیود بهره می‌برد. در حین نیم‌سیکل مثبت ولتاژ ترانسفورماتور ثانویه، دیود بالایی بایاس مستقیم بوده و دیود پایینی در بایاس معکوس است. در نیم‌سیکل منفی، پلاریته برعکس شده و دیود پایینی هدایت را به عهده می‌گیرد. در نتیجه، جریانی که از میان مقاومت بار شارش می‌یابد در هر دو نیم‌سیکل همواره جهت یکسانی دارد.</p>
+
+        <div class="theory-section-title">۳. مدار یکسوساز تمام‌موج پل (Bridge Rectifier)</div>
+        <p>بزرگترین مزیت مدار پل این است که نیازی به ترانسفورماتور سروسط ندارد و بنابراین با کاهش اندازه و هزینه همراه است. در حین نیم‌سیکل مثبت منبع، دو دیود روبه‌روی هم به صورت سری جریان را هدایت می‌کنند، در حالی که دو دیود دیگر در بایاس معکوس هستند. در نیم‌سیکل منفی جای این دو جفت عوض می‌شود و در نهایت جریان از میان مقاومت بار با جهت یکسان شارش می‌یابد.</p>
+
+        <div class="theory-section-title">روابط ریاضی (بدون فیلتر خازنی)</div>
+        <ul>
+            <li><b>ولتاژ دی‌سی (V<sub>DC</sub>):</b> برای نیم‌موج <span class="formula">V<sub>DC</sub> = V<sub>m</sub> / &pi;</span> و برای تمام‌موج <span class="formula">V<sub>DC</sub> = 2V<sub>m</sub> / &pi;</span> می‌باشد.</li>
+            <li><b>ولتاژ مؤثر (V<sub>RMS</sub>):</b> برای نیم‌موج <span class="formula">V<sub>RMS</sub> = V<sub>m</sub> / 2</span> و برای تمام‌موج <span class="formula">V<sub>RMS</sub> = V<sub>m</sub> / &radic;2</span> است.</li>
+            <li><b>فاکتور ضربان (r):</b> نسبت مؤلفه AC به ولتاژ DC است و از رابطه زیر به دست می‌آید:
+                <div class="math-block">
+                    <span class="formula">r = &radic;[ ( V<sub>RMS</sub> / V<sub>DC</sub> )<sup>2</sup> - 1 ]</span>
+                </div>
+            </li>
+        </ul>
+
+        <div class="theory-section-title">تأثیر فیلتر خازنی و روابط مربوطه</div>
+        <ul>
+            <li>ارزان‌ترین و ساده‌ترین فیلتر، فیلتر خازنی است که در آن یک خازن ظرفیت بالا به صورت شنت (موازی) به مقاومت بار متصل می‌شود.</li>
+            <li>خازن تا ولتاژ پیک شارژ می‌شود و هنگامی که از مقدار پیک عبور می‌کند، خازن در میان مقاومت بار به آرامی دشارژ می‌شود تا افت ولتاژ را جبران کند.</li>
+            <li>با فرض شکل‌موج دندان‌اره‌ای برای ریپل، مقدار مؤثر ولتاژ ضربان عبارت است از: <span class="formula">V<sub>r,RMS</sub> = V<sub>r,PP</sub> / (2&radic;3)</span>.</li>
+            <li>ولتاژ میانگین خروجی در حضور فیلتر با تقریب خوبی برابر است با: <span class="formula">V<sub>DC</sub> = V<sub>m</sub> - (V<sub>r,PP</sub> / 2)</span>.</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    let chartInstance = null;
+    let currentData = { t: [], vin: [], vout: [] };
+    let metrics = { Vm: 0, Vdc: 0, Vrms: 0, Vrpp: 0, Ripple: 0 };
+    
+    const ui = {
+        type: document.getElementById('rectifierType'),
+        filter: document.getElementById('filterType'),
+        vm: document.getElementById('vmSlider'),
+        vmOut: document.getElementById('vmOutput'),
+        lblVm: document.getElementById('lbl_Vm'),
+        lblVdc: document.getElementById('lbl_Vdc'),
+        lblVrms: document.getElementById('lbl_Vrms'),
+        lblRipple: document.getElementById('lbl_Ripple'),
+        canvas: document.getElementById('circuitCanvas'),
+        ctx: document.getElementById('circuitCanvas').getContext('2d'),
+        tableHead: document.getElementById('tableHead'),
+        tableBody: document.getElementById('tableBody'),
+        btnSweep: document.getElementById('btnSweep'),
+        btnClear: document.getElementById('btnClear'),
+        sweepProgress: document.getElementById('sweepProgressBar'),
+        sweepStatus: document.getElementById('sweepStatus'),
+        sweepPercent: document.getElementById('sweepPercent')
+    };
+
+    const R_load = 1000; 
+    const C_filter = 220e-6; 
+    const f = 50; 
+    const V_diode = 0.7; 
+    const w = 2 * Math.PI * f;
+
+    function init() {
+        initChart();
+        updateTableHeaders();
+        
+        ui.type.addEventListener('change', runSimulation);
+        ui.filter.addEventListener('change', () => {
+            updateTableHeaders();
+            runSimulation();
+        });
+        ui.vm.addEventListener('input', (e) => {
+            ui.vmOut.innerText = parseFloat(e.target.value).toFixed(1) + " V";
+            runSimulation();
+        });
+        
+        ui.btnSweep.addEventListener('click', runSweep);
+        ui.btnClear.addEventListener('click', () => { ui.tableBody.innerHTML = ''; });
+
+        runSimulation();
+    }
+
+    // ==========================================
+    // رسم المان‌های مداری
+    // ==========================================
+
+    // رسم دیود افقی (از چپ به راست)
+    // جریان در جهت مثبت x جاری می‌شود
+    function drawDiodeH(ctx, x, y) {
+        const L = 22; // نیمه طول کل
+        ctx.save();
+        ctx.translate(x, y);
+        // پاک‌سازی پس‌زمینه زیر دیود
+        ctx.clearRect(-L - 2, -14, (L + 2) * 2, 28);
+        // خط ورودی
+        ctx.strokeStyle = '#9ca3af';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(-L, 0); ctx.lineTo(-8, 0); ctx.stroke();
+        // مثلث دیود
+        ctx.fillStyle = '#ef4444';
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(-8, -10); ctx.lineTo(8, 0); ctx.lineTo(-8, 10); ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        // خط کاتد (عمودی)
+        ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.moveTo(8, -11); ctx.lineTo(8, 11); ctx.stroke();
+        // خط خروجی
+        ctx.strokeStyle = '#9ca3af';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(8, 0); ctx.lineTo(L, 0); ctx.stroke();
+        ctx.restore();
+    }
+
+    // رسم دیود عمودی، dir=+1 یعنی جریان به پایین، dir=-1 یعنی جریان به بالا
+    function drawDiodeV(ctx, x, y, dir) {
+        const L = 22;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(dir > 0 ? Math.PI / 2 : -Math.PI / 2);
+        ctx.clearRect(-L - 2, -14, (L + 2) * 2, 28);
+        ctx.strokeStyle = '#9ca3af';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(-L, 0); ctx.lineTo(-8, 0); ctx.stroke();
+        ctx.fillStyle = '#ef4444';
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(-8, -10); ctx.lineTo(8, 0); ctx.lineTo(-8, 10); ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.moveTo(8, -11); ctx.lineTo(8, 11); ctx.stroke();
+        ctx.strokeStyle = '#9ca3af';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(8, 0); ctx.lineTo(L, 0); ctx.stroke();
+        ctx.restore();
+    }
+
+    // رسم دیود مورب برای پل - angle: زاویه جریان
+    function drawDiodeDiag(ctx, x, y, angle) {
+        const L = 43;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        //ّ حذف clearRect - دیگر خطوط قبلی پاک نمی‌شوند
+        ctx.strokeStyle = '#9ca3af';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(-L, 0); ctx.lineTo(-8, 0); ctx.stroke();
+        ctx.fillStyle = '#ef4444';
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(-8, -10); ctx.lineTo(8, 0); ctx.lineTo(-8, 10); ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.moveTo(8, -11); ctx.lineTo(8, 11); ctx.stroke();
+        ctx.strokeStyle = '#9ca3af';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(8, 0); ctx.lineTo(L, 0); ctx.stroke();
+        ctx.restore();
+    }
+
+    // رسم مقاومت (مستطیل استاندارد IEC)
+    function drawResistor(ctx, x, y1, y2) {
+        const pad = 18;
+        const bw = 14, bh = (y2 - y1) - 2 * pad;
+        ctx.beginPath();
+        ctx.moveTo(x, y1);
+        ctx.lineTo(x, y1 + pad);
+        ctx.stroke();
+        ctx.strokeRect(x - bw, y1 + pad, bw * 2, bh);
+        ctx.beginPath();
+        ctx.moveTo(x, y1 + pad + bh);
+        ctx.lineTo(x, y2);
+        ctx.stroke();
+    }
+
+    // رسم خازن
+    function drawCapacitor(ctx, x, y1, y2) {
+        const pad = 18, gap = 5;
+        const mid = (y1 + y2) / 2;
+        ctx.strokeStyle = '#22c55e';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x, y1); ctx.lineTo(x, mid - gap);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x - 20, mid - gap); ctx.lineTo(x + 20, mid - gap);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x - 20, mid + gap); ctx.lineTo(x + 20, mid + gap);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x, mid + gap); ctx.lineTo(x, y2);
+        ctx.stroke();
+    }
+
+    // رسم ترانسفورماتور
+    function drawTransformer(ctx, x1, x2, y1, y2, hasCenterTap) {
+        const cy = (y1 + y2) / 2;
+        const coreX1 = x1 + (x2 - x1) * 0.42;
+        const coreX2 = x1 + (x2 - x1) * 0.58;
+        const coilR = 10;
+        const coils = 4;
+        const totalH = y2 - y1;
+        const coilSpan = totalH / coils;
+
+        // سیم‌پیچ اولیه (چپ)
+        ctx.strokeStyle = '#9ca3af';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let i = 0; i < coils; i++) {
+            const cy_coil = y1 + coilSpan * i + coilSpan / 2;
+            ctx.arc(coreX1, cy_coil, coilR, Math.PI * 0.5, Math.PI * 1.5, true);
+        }
+        ctx.stroke();
+        // اتصال بالا و پایین سیم‌پیچ اولیه
+        ctx.beginPath();
+        ctx.moveTo(x1, y1); ctx.lineTo(coreX1, y1);
+        ctx.moveTo(x1, y2); ctx.lineTo(coreX1, y2);
+        ctx.stroke();
+
+        // سیم‌پیچ ثانویه (راست)
+        ctx.beginPath();
+        for (let i = 0; i < coils; i++) {
+            const cy_coil = y1 + coilSpan * i + coilSpan / 2;
+            ctx.arc(coreX2, cy_coil, coilR, Math.PI * 0.5, Math.PI * 1.5);
+        }
+        ctx.stroke();
+        // اتصال بالا و پایین سیم‌پیچ ثانویه
+        ctx.beginPath();
+        ctx.moveTo(coreX2, y1); ctx.lineTo(x2, y1);
+        ctx.moveTo(coreX2, y2); ctx.lineTo(x2, y2);
+        ctx.stroke();
+
+        // هسته مرکزی
+        ctx.strokeStyle = '#64748b';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(coreX1 + coilR + 2, y1 + 4); ctx.lineTo(coreX1 + coilR + 2, y2 - 4);
+        ctx.moveTo(coreX2 - coilR - 2, y1 + 4); ctx.lineTo(coreX2 - coilR - 2, y2 - 4);
+        ctx.stroke();
+
+        // سر وسط برای FWR
+        if (hasCenterTap) {
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([4, 3]);
+            ctx.beginPath();
+            ctx.moveTo(coreX2, cy); ctx.lineTo(x2, cy);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            // نقطه سر وسط
+            ctx.beginPath();
+            ctx.arc(x2, cy, 4, 0, 2 * Math.PI);
+            ctx.fillStyle = '#38bdf8';
+            ctx.fill();
+        }
+    }
+
+    // --- رسم شماتیک مدار ---
+    function drawSchematic(type, hasFilter) {
+        const ctx = ui.ctx;
+        const W = ui.canvas.width;
+        const H = ui.canvas.height;
+        ctx.clearRect(0, 0, W, H);
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+
+        if (type === 'HWR') drawHWR(ctx, W, H, hasFilter);
+        else if (type === 'FWR') drawFWR(ctx, W, H, hasFilter);
+        else if (type === 'BR')  drawBR(ctx, W, H, hasFilter);
+    }
+
+    // ---- نیم‌موج ----
+    function drawHWR(ctx, W, H, hasFilter) {
+        const y1 = 70, y2 = 180;
+        const xT_L = 30, xT_R = 200;   // سمت‌های ترانسفورماتور
+        const xR = hasFilter ? 680 : 720; // مقاومت
+        const xC = xR - 100;             // خازن
+
+        drawTransformer(ctx, xT_L, xT_R, y1, y2, false);
+
+        // برچسب ترانس
+        ctx.fillStyle = '#9ca3af'; ctx.font = '12px Tahoma'; ctx.textAlign = 'center';
+        ctx.fillText('230V / 6V', (xT_L + xT_R) / 2, y2 + 18);
+        ctx.textAlign = 'left';
+
+        // سیم بالا (با دیود)
+        ctx.strokeStyle = '#9ca3af'; ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(xT_R, y1); ctx.lineTo(xT_R + 60, y1);
+        ctx.stroke();
+        drawDiodeH(ctx, xT_R + 60 + 22, y1);
+        ctx.beginPath();
+        ctx.moveTo(xT_R + 60 + 44, y1); ctx.lineTo(xR, y1);
+        ctx.stroke();
+
+        // سیم برگشت (پایین)
+        ctx.beginPath();
+        ctx.moveTo(xT_R, y2); ctx.lineTo(xR, y2);
+        ctx.stroke();
+
+        // برچسب دیود
+        ctx.fillStyle = '#ef4444'; ctx.font = '12px Tahoma';
+        ctx.fillText('D₁', xT_R + 60 + 16, y1 - 14);
+
+        // خازن و مقاومت
+        if (hasFilter) {
+            drawCapacitor(ctx, xC, y1, y2);
+            ctx.fillStyle = '#22c55e'; ctx.font = '12px Tahoma';
+            ctx.fillText('220µF', xC + 24, (y1 + y2) / 2 + 4);
+            ctx.strokeStyle = '#9ca3af'; ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(xC, y1); ctx.lineTo(xR, y1);
+            ctx.moveTo(xC, y2); ctx.lineTo(xR, y2);
+            ctx.stroke();
+            dot(ctx, xC, y1); dot(ctx, xC, y2);
+        }
+        ctx.strokeStyle = '#9ca3af'; ctx.lineWidth = 2;
+        drawResistor(ctx, xR, y1, y2);
+        ctx.fillStyle = '#eab308'; ctx.font = '13px Tahoma';
+        ctx.fillText('R=1kΩ', xR + 18, (y1 + y2) / 2 + 5);
+
+        // منبع AC (سمت چپ)
+        drawACSrc(ctx, xT_L+40, y1, y2);
+    }
+
+    // ---- تمام‌موج سروسط ----
+    function drawFWR(ctx, W, H, hasFilter) {
+        const y1 = 55, y2 = 195, yMid = (y1 + y2) / 2;
+        const xT_L = 30, xT_R = 195;
+        const xR = hasFilter ? 670 : 710;
+        const xC = xR - 100;
+        const xJoin = xT_R + 120; // نقطه اتصال خروجی دیودها
+
+        drawTransformer(ctx, xT_L, xT_R, y1, y2, true);
+        ctx.fillStyle = '#9ca3af'; ctx.font = '12px Tahoma'; ctx.textAlign = 'center';
+        ctx.fillText('230V / 6-0-6V', (xT_L + xT_R) / 2, y2 + 18);
+        ctx.textAlign = 'left';
+
+        // برچسب سر وسط
+        ctx.fillStyle = '#38bdf8'; ctx.font = '11px Tahoma';
+        ctx.fillText('CT (0V)', xT_R + 6, yMid - 6);
+
+        ctx.strokeStyle = '#9ca3af'; ctx.lineWidth = 2;
+
+        // سیم بالا → دیود D1 → خط خروجی مثبت
+        ctx.beginPath(); ctx.moveTo(xT_R, y1); ctx.lineTo(xT_R + 50, y1); ctx.stroke();
+        drawDiodeH(ctx, xT_R + 50 + 22, y1);
+        ctx.beginPath(); ctx.moveTo(xT_R + 50 + 44, y1); ctx.lineTo(xJoin, y1); ctx.stroke();
+        ctx.fillStyle = '#ef4444'; ctx.font = '12px Tahoma';
+        ctx.fillText('D₁', xT_R + 62, y1 - 14);
+
+        // سیم پایین → دیود D2 (معکوس) → خط خروجی مثبت
+        ctx.beginPath(); ctx.moveTo(xT_R, y2); ctx.lineTo(xT_R + 50, y2); ctx.stroke();
+        drawDiodeH(ctx, xT_R + 50 + 22, y2);
+        ctx.beginPath(); ctx.moveTo(xT_R + 50 + 44, y2); ctx.lineTo(xJoin, y2); ctx.stroke();
+        ctx.fillStyle = '#ef4444';
+        ctx.fillText('D₂', xT_R + 62, y2 + 16);
+
+        // اتصال خروجی دیودها به خط بالا (مثبت)
+        ctx.strokeStyle = '#9ca3af'; ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(xJoin, y1); ctx.lineTo(xJoin, y2); // عمودی جمع‌کننده
+        ctx.moveTo(xJoin, y1); ctx.lineTo(xR, y1);    // خط خروجی مثبت
+        ctx.stroke();
+        dot(ctx, xJoin, y1); dot(ctx, xJoin, y2);
+
+        // سر وسط → خط بازگشت (منفی)
+        ctx.beginPath();
+        ctx.moveTo(xT_R, yMid); ctx.lineTo(xR + 14, yMid); // سیم برگشت زمین
+        ctx.stroke();
+
+        // خازن و مقاومت بین y1 و yMid
+        const rY2 = yMid;
+        if (hasFilter) {
+            drawCapacitor(ctx, xC, y1, rY2);
+            ctx.fillStyle = '#22c55e'; ctx.font = '12px Tahoma';
+            ctx.fillText('220µF', xC + 24, (y1 + rY2) / 2 + 4);
+            ctx.strokeStyle = '#9ca3af'; ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(xC, y1); ctx.lineTo(xR, y1);
+            ctx.moveTo(xC, rY2); ctx.lineTo(xR, rY2);
+            ctx.stroke();
+            dot(ctx, xC, y1); dot(ctx, xC, rY2);
+        }
+        ctx.strokeStyle = '#9ca3af'; ctx.lineWidth = 2;
+        drawResistor(ctx, xR, y1, rY2);
+        ctx.fillStyle = '#eab308'; ctx.font = '13px Tahoma';
+        ctx.fillText('R=1kΩ', xR + 18, (y1 + rY2) / 2 + 5);
+
+        drawACSrc(ctx, xT_L+40, y1, y2);
+    }
+
+// ---- تمام‌موج پل ----
+    function drawBR(ctx, W, H, hasFilter) {
+        // پل دیودی: لوزی استاندارد
+        // گره‌ها: AC از چپ و راست لوزی، DC+ از بالا، DC- از پایین
+        const xT_L = 25, xT_R = 175;
+        const y1 = 60, y2 = 190;
+
+        // مرکز لوزی
+        const cx = 330, cy = (y1 + y2) / 2; // 125
+        const sz = 60; // نیم‌قطر لوزی
+
+        // گره‌های لوزی
+        const gTop   = {x: cx,      y: cy - sz}; // DC+
+        const gBot   = {x: cx,      y: cy + sz}; // DC-
+        const gLeft  = {x: cx - sz, y: cy};      // AC ورودی بالا
+        const gRight = {x: cx + sz, y: cy};      // AC ورودی پایین
+
+        const xR = hasFilter ? 660 : 700;
+        const xC = xR - 100;
+        const outY1 = gTop.y, outY2 = gBot.y;
+
+        drawTransformer(ctx, xT_L, xT_R, y1, y2, false);
+        ctx.fillStyle = '#9ca3af'; ctx.font = '12px Tahoma'; ctx.textAlign = 'center';
+        ctx.fillText('230V / 6V', (xT_L + xT_R) / 2, y2 + 18);
+        ctx.textAlign = 'left';
+
+        ctx.strokeStyle = '#9ca3af'; ctx.lineWidth = 2;
+
+        // سیم ورودی AC بالا (مسیرکشی 90 درجه)
+        ctx.beginPath();
+        ctx.moveTo(xT_R, y1); 
+        ctx.lineTo(gLeft.x - 20, y1); 
+        ctx.lineTo(gLeft.x - 20, gLeft.y);
+        ctx.lineTo(gLeft.x, gLeft.y);
+        ctx.stroke();
+
+        // سیم ورودی AC پایین (مسیرکشی 90 درجه + جامپ از روی سیم DC)
+        ctx.beginPath();
+        ctx.moveTo(gRight.x, gRight.y);
+        ctx.lineTo(gRight.x, gBot.y - 6); // خط مستقیم به سمت پایین تا مرز سیم منفی
+        ctx.arc(gRight.x, gBot.y, 6, -Math.PI/2, Math.PI/2, true); // جامپ نیم‌دایره از روی سیم
+        ctx.lineTo(gRight.x, y2 + 20); // رفتن به فضای خالی زیر ترانس
+        ctx.lineTo(xT_R + 15, y2 + 20); // برگشت افقی به سمت ترانس
+        ctx.lineTo(xT_R + 15, y2); // بالا رفتن تا روبه‌روی پین
+        ctx.lineTo(xT_R, y2); // اتصال به پین
+        ctx.stroke();
+
+        // چهار لبه لوزی با دیود
+        // D1: gLeft → gTop (جریان به بالا)
+        drawDiodeDiag(ctx, (gLeft.x + gTop.x) / 2, (gLeft.y + gTop.y) / 2,
+            Math.atan2(gTop.y - gLeft.y, gTop.x - gLeft.x));
+        ctx.fillStyle = '#ef4444'; ctx.font = '11px Tahoma';
+        ctx.fillText('D₁', (gLeft.x + gTop.x)/2 - 26, (gLeft.y + gTop.y)/2 - 8);
+
+        // D2: gBot → gLeft (جریان از پایین به چپ، یعنی gLeft ← gBot)
+        drawDiodeDiag(ctx, (gBot.x + gLeft.x) / 2, (gBot.y + gLeft.y) / 2,
+            Math.atan2(gLeft.y - gBot.y, gLeft.x - gBot.x));
+        ctx.fillStyle = '#ef4444';
+        ctx.fillText('D₂', (gBot.x + gLeft.x)/2 - 30, (gBot.y + gLeft.y)/2 + 16);
+
+        // D3: gRight → gTop (جریان به بالا)
+        drawDiodeDiag(ctx, (gRight.x + gTop.x) / 2, (gRight.y + gTop.y) / 2,
+            Math.atan2(gTop.y - gRight.y, gTop.x - gRight.x));
+        ctx.fillStyle = '#ef4444';
+        ctx.fillText('D₃', (gRight.x + gTop.x)/2 + 8, (gRight.y + gTop.y)/2 - 8);
+
+        // D4: gBot → gRight
+        drawDiodeDiag(ctx, (gBot.x + gRight.x) / 2, (gBot.y + gRight.y) / 2,
+            Math.atan2(gRight.y - gBot.y, gRight.x - gBot.x));
+        ctx.fillStyle = '#ef4444';
+        ctx.fillText('D₄', (gBot.x + gRight.x)/2 + 8, (gBot.y + gRight.y)/2 + 16);
+
+        // گره‌ها
+        [gTop, gBot, gLeft, gRight].forEach(g => dot(ctx, g.x, g.y));
+
+        // سیم خروجی DC+ (از gTop به بالا و سپس افقی به مقاومت)
+        ctx.strokeStyle = '#9ca3af'; ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(gTop.x, gTop.y); ctx.lineTo(gTop.x, outY1); ctx.lineTo(xR, outY1);
+        ctx.stroke();
+
+        // سیم خروجی DC- (از gBot به پایین و سپس افقی به مقاومت)
+        ctx.beginPath();
+        ctx.moveTo(gBot.x, gBot.y); ctx.lineTo(gBot.x, outY2); ctx.lineTo(xR, outY2);
+        ctx.stroke();
+
+        // خازن
+        if (hasFilter) {
+            drawCapacitor(ctx, xC, outY1, outY2);
+            ctx.fillStyle = '#22c55e'; ctx.font = '12px Tahoma';
+            ctx.fillText('220µF', xC + 24, cy + 4);
+            ctx.strokeStyle = '#9ca3af'; ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(xC, outY1); ctx.lineTo(xR, outY1);
+            ctx.moveTo(xC, outY2); ctx.lineTo(xR, outY2);
+            ctx.stroke();
+            dot(ctx, xC, outY1); dot(ctx, xC, outY2);
+        }
+
+        ctx.strokeStyle = '#9ca3af'; ctx.lineWidth = 2;
+        drawResistor(ctx, xR, outY1, outY2);
+        ctx.fillStyle = '#eab308'; ctx.font = '13px Tahoma';
+        ctx.fillText('R=1kΩ', xR + 18, cy + 5);
+
+        drawACSrc(ctx, xT_L+40, y1, y2);
+    }
+
+    // رسم منبع AC (دایره با ~)
+    function drawACSrc(ctx, xRight, y1, y2) {
+        const cy = (y1 + y2) / 2;
+        const r = 22;
+        const xc = xRight - r - 4;
+        ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(xc, cy, r, 0, 2 * Math.PI); ctx.stroke();
+        // موج سینوسی داخل دایره
+        ctx.beginPath();
+        for (let i = 0; i <= 40; i++) {
+            const t = (i / 40) * Math.PI * 2 - Math.PI;
+            const px = xc + (t / Math.PI) * (r - 6);
+            const py = cy - Math.sin(t) * (r - 10);
+            i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+    }
+
+    function dot(ctx, x, y) {
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, 2 * Math.PI);
+        ctx.fillStyle = '#e5e7eb';
+        ctx.fill();
+    }
+
+    function runSimulation() {
+        const type = ui.type.value;
+        const hasFilter = ui.filter.value === 'CAP';
+        const Vm = parseFloat(ui.vm.value);
+        
+        drawSchematic(type, hasFilter);
+
+        const dt = 0.0001; 
+        let t = 0;
+        let vout_current = 0;
+        
+        let t_plot = [], vin_plot = [], vout_plot = [];
+        let sum_Vout = 0, sum_Vout2 = 0;
+        let max_Vout = 0, min_Vout = 9999;
+        let count_points = 0;
+
+        for (let step = 0; step < 1000; step++) {
+            t = step * dt;
+            let Vin = Vm * Math.sin(w * t);
+            let Vrect = 0;
+
+            if (type === 'HWR') {
+                Vrect = Vin > V_diode ? Vin - V_diode : 0;
+            } else if (type === 'FWR') {
+                let Vin2 = -Vin; 
+                Vrect = Math.max(Vin - V_diode, Vin2 - V_diode, 0);
+            } else if (type === 'BR') {
+                Vrect = Math.abs(Vin) > 2 * V_diode ? Math.abs(Vin) - 2 * V_diode : 0;
+            }
+
+            if (hasFilter) {
+                if (Vrect > vout_current) {
+                    vout_current = Vrect; 
+                } else {
+                    vout_current = vout_current * Math.exp(-dt / (R_load * C_filter)); 
+                }
+            } else {
+                vout_current = Vrect;
+            }
+
+            if (t >= 0.04) {
+                let displayTime = (t - 0.04) * 1000; 
+                t_plot.push(displayTime);
+                vin_plot.push(Vin);
+                vout_plot.push(vout_current);
+
+                sum_Vout += vout_current;
+                sum_Vout2 += (vout_current * vout_current);
+                if (vout_current > max_Vout) max_Vout = vout_current;
+                if (vout_current < min_Vout) min_Vout = vout_current;
+                count_points++;
+            }
+        }
+
+        let Vdc = sum_Vout / count_points;
+        let Vrms_out = Math.sqrt(sum_Vout2 / count_points);
+        let Vac_sq = Vrms_out*Vrms_out - Vdc*Vdc;
+        let Vac_rms = Vac_sq > 0 ? Math.sqrt(Vac_sq) : 0;
+        let ripple = Vdc > 0 ? (Vac_rms / Vdc) * 100 : 0;
+        let Vrpp = hasFilter ? (max_Vout - min_Vout) : 0;
+
+        metrics = { Vm: Vm, Vdc: Vdc, Vrms: Vrms_out, Vrpp: Vrpp, Ripple: ripple };
+        
+        ui.lblVm.innerText = Vm.toFixed(2);
+        ui.lblVdc.innerText = Vdc.toFixed(2);
+        ui.lblVrms.innerText = Vrms_out.toFixed(2);
+        ui.lblRipple.innerText = ripple.toFixed(1);
+
+        currentData.t = t_plot;
+        currentData.vin = vin_plot;
+        currentData.vout = vout_plot;
+        updateChartDisplay();
+    }
+
+    function initChart() {
+        const ctx = document.getElementById('oscChart').getContext('2d');
+        chartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    { label: 'Vin', data: [], borderColor: 'rgba(56, 189, 248, 0.4)', borderWidth: 2, pointRadius: 0, tension: 0.1 },
+                    { label: 'Vout', data: [], borderColor: '#22c55e', borderWidth: 2.5, pointRadius: 0, tension: 0.1, backgroundColor: 'rgba(34, 197, 94, 0.1)', fill: true }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                animation: { duration: 0 }, 
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { title: { display: true, text: "زمان (ms)", color: "#9ca3af" }, ticks: { color: "#9ca3af", maxTicksLimit: 10 }, grid: { color: "#1f2937" } },
+                    y: { title: { display: true, text: "ولتاژ (V)", color: "#9ca3af" }, ticks: { color: "#9ca3af" }, grid: { color: "#1f2937" } }
+                }
+            }
+        });
+    }
+
+    function updateChartDisplay() {
+        if (!chartInstance) return;
+        chartInstance.data.labels = currentData.t.map(v => v.toFixed(1));
+        chartInstance.data.datasets[0].data = currentData.vin;
+        chartInstance.data.datasets[1].data = currentData.vout;
+        chartInstance.update();
+    }
+
+    function updateTableHeaders() {
+        const hasFilter = ui.filter.value === 'CAP';
+        let html = '';
+        if (hasFilter) {
+            html = `<tr><th>V<sub>m</sub> (V)</th><th>V<sub>r,PP</sub> (V)</th><th>V<sub>r,RMS</sub> (V)</th><th>V<sub>DC</sub> (V)</th><th>فاکتور ضربان r (%)</th></tr>`;
+        } else {
+            html = `<tr><th>V<sub>m</sub> (V)</th><th>V<sub>RMS</sub> (V)</th><th>V<sub>DC</sub> (V)</th><th>فاکتور ضربان r (%)</th></tr>`;
+        }
+        ui.tableHead.innerHTML = html;
+        ui.tableBody.innerHTML = ''; 
+    }
+
+    function appendTableRow() {
+        const hasFilter = ui.filter.value === 'CAP';
+        let row = document.createElement("tr");
+        if (hasFilter) {
+            let vr_rms = metrics.Vrpp / (2 * Math.sqrt(3)); 
+            row.innerHTML = `
+                <td>${metrics.Vm.toFixed(2)}</td>
+                <td>${metrics.Vrpp.toFixed(2)}</td>
+                <td>${vr_rms.toFixed(2)}</td>
+                <td>${metrics.Vdc.toFixed(2)}</td>
+                <td style="color:var(--danger)">${metrics.Ripple.toFixed(1)}</td>
+            `;
+        } else {
+            row.innerHTML = `
+                <td>${metrics.Vm.toFixed(2)}</td>
+                <td>${metrics.Vrms.toFixed(2)}</td>
+                <td>${metrics.Vdc.toFixed(2)}</td>
+                <td style="color:var(--danger)">${metrics.Ripple.toFixed(1)}</td>
+            `;
+        }
+        ui.tableBody.appendChild(row);
+        
+        const wrapper = document.querySelector('.table-wrapper');
+        wrapper.scrollTop = wrapper.scrollHeight;
+    }
+
+    function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+    async function runSweep() {
+        ui.btnSweep.disabled = true;
+        ui.tableBody.innerHTML = '';
+        ui.sweepStatus.innerText = "در حال جاروب ولتاژ...";
+        
+        const steps = 15;
+        const minV = 2.0;
+        const maxV = 20.0;
+        const stepV = (maxV - minV) / steps;
+
+        for (let i = 0; i <= steps; i++) {
+            let currentV = minV + (i * stepV);
+            ui.vm.value = currentV;
+            ui.vmOut.innerText = currentV.toFixed(1) + " V";
+            
+            runSimulation(); 
+            appendTableRow(); 
+            
+            let progress = (i / steps) * 100;
+            ui.sweepPercent.innerText = Math.round(progress) + "%";
+            ui.sweepProgress.style.width = progress + "%";
+
+            await sleep(150); 
+        }
+
+        ui.sweepStatus.innerText = "جاروب ولتاژ با موفقیت کامل شد.";
+        ui.btnSweep.disabled = false;
+    }
+
+    window.addEventListener('DOMContentLoaded', init);
+
+  </script>
+</body>
+</html>

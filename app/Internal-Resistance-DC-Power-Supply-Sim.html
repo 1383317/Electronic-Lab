@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>شبیه‌ساز تعیین مقاومت داخلی باتری</title>
+  
+  <style>
+    @font-face {
+      font-family: 'XB Niloofar';
+      src: url('Fonts/XB Niloofar.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+    
+    body {
+      font-family: 'XB Niloofar', sans-serif;
+    }
+  </style>
+  
+  <script src="js/chart.umd.js"></script>
+
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --panel-bg: #020617;
+      --card-bg: #1e293b;
+      --accent: #38bdf8;
+      --accent-soft: #0ea5e9;
+      --text-main: #e5e7eb;
+      --muted: #9ca3af;
+      --danger: #f97373;
+      --success: #22c55e;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 20px 10px 40px;
+      font-family: 'XB Niloofar', sans-serif;
+      background: radial-gradient(circle at top, #1f2937 0, #020617 55%, #020617 100%);
+      color: var(--text-main);
+      direction: rtl;
+      overflow-x: hidden;
+    }
+
+    h1, h2, h3, h4 { margin: 0; font-weight: 600; }
+
+    .page-header { text-align: center; margin-bottom: 20px; margin-top: 25px;}
+    .page-header h1 { font-size: 22px; color: #f8fafc;}
+    .page-header .subtitle { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+    .creator-credit {
+      position: absolute; top: 15px; left: 20px; display: flex; align-items: center; gap: 10px;
+      background: rgba(15, 23, 42, 0.7); padding: 6px 14px; border-radius: 10px; border: 1px solid #1f2937;
+      z-index: 1000;
+    }
+    .creator-credit img { height: 35px; width: auto; object-fit: contain; }
+    .creator-credit span { color: #9ca3af; font-size: 13px; font-family: monospace; direction: ltr; font-weight: bold; }
+
+    .lab-info {
+      position: absolute; top: 12px; right: 20px; display: flex; flex-direction: column; align-items: center; 
+      background: rgba(15, 23, 42, 0.7); padding: 5px 15px; border-radius: 10px; border: 1px solid #1f2937;
+      text-align: center; z-index: 1000;
+    }
+    .lab-info .title { color: #f8fafc; font-size: 16px; font-weight: bold; }
+    .lab-info .prof { color: #9ca3af; font-size: 11px; margin-top: 2px; }
+
+    .main-container {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      max-width: 750px; 
+      margin: 0 auto; 
+    }
+
+    .card {
+      background: radial-gradient(circle at top left, #020617 0, #020617 45%, #020617 100%);
+      border-radius: 14px;
+      border: 1px solid #1f2937;
+      padding: 16px;
+      box-shadow: 0 14px 28px rgba(15, 23, 42, 0.85);
+    }
+
+    .card-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
+    .card-header h3 { font-size: 15px; color: #f8fafc; }
+    .card-header .sub { font-size: 11px; color: var(--muted); }
+
+    .controls-grid { display: grid; grid-template-columns: 1fr; gap: 10px; font-size: 12px; }
+    .control-row { display: grid; grid-template-columns: 90px minmax(100px, 1fr) 70px; align-items: center; gap: 8px; }
+    .control-label { color: var(--muted); font-size: 12px; }
+    .control-output { text-align: left; font-variant-numeric: tabular-nums; direction: ltr; font-size: 12px; color: var(--accent-soft); }
+
+    input[type="range"] {
+      width: 100%; -webkit-appearance: none; height: 5px; border-radius: 999px; background: #0f172a; outline: none; direction: ltr;
+    }
+    input[type="range"]::-webkit-slider-thumb, input[type="range"]::-moz-range-thumb {
+      -webkit-appearance: none; width: 15px; height: 15px; border-radius: 50%; background: var(--accent);
+      border: 1px solid #0ea5e9; box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25); cursor: pointer;
+    }
+
+    .live-values { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+    .live-box {
+      background: #020617; border-radius: 8px; border: 1px solid #1f2937; padding: 8px; 
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+    }
+    .live-label { color: var(--muted); font-size: 11px; }
+    .live-value { font-variant-numeric: tabular-nums; direction: ltr; font-size: 14px; font-weight: bold; }
+    .live-value.u { color: #facc15; }
+    .live-value.i { color: #4ade80; }
+    .live-value.p { color: #fb923c; }
+
+    .sim-container {
+      background: radial-gradient(circle at top, #020617 0, #020617 60%, #020617 100%);
+      border-radius: 14px; border: 1px solid #1e293b;
+      box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.9), 0 20px 40px rgba(0, 0, 0, 0.9);
+      padding: 16px; position: relative;
+    }
+    
+    .sim-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .sim-status { font-size: 12px; display: flex; align-items: center; gap: 6px; color: var(--muted); }
+    .status-led { width: 10px; height: 10px; border-radius: 50%; background: #ef4444; box-shadow: 0 0 8px rgba(248, 113, 113, 0.8); }
+    .status-led.on { background: #22c55e; box-shadow: 0 0 10px rgba(34, 197, 94, 0.85); }
+
+    #simCanvas {
+      display: block; width: 100%; max-width: 640px; height: auto;
+      background: transparent; border: none; margin: 0 auto;
+    }
+
+    .charts-row { 
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; margin-top: 6px;
+    }
+    .chart-box {
+      height: 250px; background: #020617; border-radius: 9px; border: 1px solid #111827; 
+      padding: 10px; display: flex; flex-direction: column;
+    }
+    .chart-top-bar {
+      display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;
+    }
+    .chart-title { font-size: 11px; color: var(--muted); }
+    .chart-title span { color: var(--accent-soft); }
+    .chart-legend {
+      font-size: 10px; color: #9ca3af; display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
+    }
+    .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .legend-dot.ui { background: #22c55e; }
+    .legend-dot.data { background: #38bdf8; }
+
+    .canvas-container { position: relative; flex: 1; width: 100%; }
+    canvas.chart { position: absolute; inset: 0; width: 100% !important; height: 100% !important; }
+
+    .data-toolbar { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+    .data-toolbar-right, .data-toolbar-left { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    .btn {
+      border: 1px solid #1d4ed8; background: radial-gradient(circle at top, #1d4ed8 0, #1d4ed8 30%, #1e293b 100%);
+      color: #e5e7eb; border-radius: 999px; padding: 5px 12px; font-size: 11px; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 4px; transition: 0.2s;
+    }
+    .btn:hover { opacity: 0.9; }
+    .btn.secondary { border-color: #4b5563; background: #1e293b; }
+
+    /* استایل‌های مربوط به اسکرول شدن جدول */
+    .table-wrapper {
+      max-height: 250px;
+      overflow-y: auto;
+      border-radius: 7px;
+      border: 1px solid #111827;
+      background: #020617;
+    }
+    .table-wrapper::-webkit-scrollbar { width: 8px; }
+    .table-wrapper::-webkit-scrollbar-track { background: #0f172a; }
+    .table-wrapper::-webkit-scrollbar-thumb { background: #0ea5e9; border-radius: 10px; }
+
+    table.data-table { width: 100%; border-collapse: collapse; background: #020617; }
+    table.data-table th, table.data-table td { border-bottom: 1px solid #111827; text-align: center; padding: 6px; font-variant-numeric: tabular-nums; }
+    
+    table.data-table th { 
+      font-size: 11px; color: #9ca3af; background: #0f172a; 
+      position: sticky; top: 0; z-index: 10;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    }
+    table.data-table td { font-size: 12px; color: #e5e7eb; }
+    table.data-table tbody tr:hover { background: rgba(30, 64, 175, 0.25); }
+
+    .fit-results { margin-top: 10px; font-size: 12px; color: #9ca3af; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+    .fit-results span { direction: ltr; font-variant-numeric: tabular-nums; background: #020617; padding: 4px 8px; border-radius: 4px; border: 1px solid #1f2937; }
+    .fit-ri { color: #facc15; }
+    .fit-error { color: #fb7185; }
+
+    /* استایل‌های باکس تئوری ارتقایافته */
+    .theory-box p { font-size: 13px; color: #9ca3af; line-height: 1.8; margin: 8px 0; text-align: justify; }
+    .theory-box ul { list-style-type: none; padding-right: 0; margin-top: 10px; }
+    .theory-box ul li { font-size: 13px; color: #9ca3af; line-height: 1.8; position: relative; padding-right: 18px; margin-bottom: 8px; text-align: justify; }
+    .theory-box ul li::before { content: "🔹"; position: absolute; right: 0; top: 2px; font-size: 10px; color: #38bdf8; }
+    .theory-section-title { font-size: 14px; font-weight: bold; color: #38bdf8; margin-top: 15px; margin-bottom: 5px; border-bottom: 1px solid #1f2937; padding-bottom: 5px;}
+    .highlight-blue { color: #38bdf8; font-weight: bold; }
+    .highlight-white { color: #f8fafc; font-weight: bold; }
+
+    @media (max-width: 600px) {
+        .creator-credit, .lab-info { position: static; margin: 0 auto 10px; justify-content: center; width: max-content; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="creator-credit">
+    <span>credit:@MSR_83</span>
+    <img src="credit/IUST.png" alt="University Logo">
+  </div>
+  <div class="lab-info">
+    <span class="title">آزمایشگاه الکترونیک</span>
+    <span class="prof">استاد : دکتر دباغ کاشانی</span>
+  </div>
+  
+  <div class="page-header">
+    <h1>شبیه‌ساز آزمایش تعیین مقاومت داخلی باتری</h1>
+    <div class="subtitle">بررسی افت پتانسیل داخلی و انتقال توان ماکزیمم</div>
+  </div>
+
+  <div class="main-container">
+    
+    <div class="sim-container">
+      <div class="sim-header">
+        <div style="font-size: 14px; font-weight: bold; color: #f8fafc;">نمای شماتیک مدار</div>
+        <div class="sim-status">
+          <div class="status-led" id="statusLed"></div>
+          <span id="statusText">مدار خاموش</span>
+        </div>
+      </div>
+      <canvas id="simCanvas" width="640" height="380"></canvas>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h3>کنترل مدار و منبع تغذیه</h3>
+          <div class="sub">مقاومت داخلی r، ولتاژ باتری ε و مقاومت خارجی R را تنظیم کنید</div>
+        </div>
+      </div>
+
+      <div class="controls-grid">
+        <div class="control-row">
+          <div class="control-label">ولتاژ ε (V)</div>
+          <input type="range" id="emfSlider" min="1" max="12" value="9" step="0.5">
+          <div class="control-output"><span id="emfValue">9.0</span> V</div>
+        </div>
+        <div class="control-row">
+          <div class="control-label">مقاومت خارجی R (Ω)</div>
+          <input type="range" id="rLoadSlider" min="1" max="50" value="20" step="1">
+          <div class="control-output"><span id="rLoadValue">20</span> Ω</div>
+        </div>
+        <div class="control-row">
+          <div class="control-label">مقاومت داخلی r (Ω)</div>
+          <input type="range" id="rInternalSlider" min="0" max="20" value="5" step="0.5">
+          <div class="control-output"><span id="rInternalValue">5.0</span> Ω</div>
+        </div>
+        <div class="control-row">
+          <div class="control-label">اتصال مدار</div>
+          <div>
+            <button class="btn" id="toggleCircuitBtn" style="width: 100%; justify-content: center;">
+              <span class="btn-icon">⏻</span> <span>قطع / وصل</span>
+            </button>
+          </div>
+          <div class="control-output"><span id="circuitStateLabel">مدار باز است</span></div>
+        </div>
+      </div>
+
+      <div class="live-values">
+        <div class="live-box">
+          <div class="live-label">جریان عبوری</div>
+          <div class="live-value i"><span id="currentValue">0.000</span> A</div>
+        </div>
+        <div class="live-box">
+          <div class="live-label">ولتاژ دوسر R</div>
+          <div class="live-value u"><span id="voltageValue">0.00</span> V</div>
+        </div>
+        <div class="live-box">
+          <div class="live-label">توان در R</div>
+          <div class="live-value p"><span id="powerValue">0.000</span> W</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="charts-row">
+      <div class="chart-box">
+        <div class="chart-top-bar">
+          <div class="chart-title">نمودار <span>U بر حسب I</span></div>
+          <div class="chart-legend">
+            <div class="legend-dot data"></div><span>نقاط</span>
+            <div class="legend-dot ui"></div><span>خط برازش</span>
+          </div>
+        </div>
+        <div class="canvas-container">
+          <canvas class="chart" id="uiChart"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-box">
+        <div class="chart-top-bar">
+          <div class="chart-title">نمودار <span>P بر حسب R</span></div>
+        </div>
+        <div class="canvas-container">
+          <canvas class="chart" id="pChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h3>جمع‌آوری خودکار داده‌ها (Sweep مقاومت بار)</h3>
+          <div class="sub">جاروب مقاومت خارجی (R) جهت رسم منحنی انتقال توان و تعیین مقاومت داخلی</div>
+        </div>
+      </div>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+        <div>
+          <label style="color: var(--muted); font-size: 12px; display: block; margin-bottom: 5px;">مقاومت شروع (Ω)</label>
+          <input type="number" id="sweepStart" value="1" min="1" max="100" step="1" style="width: 100%; padding: 6px; border-radius: 8px; background: #0f172a; color: #e5e7eb; border: 1px solid #1f2937; outline: none; direction: ltr;">
+        </div>
+        <div>
+          <label style="color: var(--muted); font-size: 12px; display: block; margin-bottom: 5px;">مقاومت پایان (Ω)</label>
+          <input type="number" id="sweepEnd" value="50" min="1" max="100" step="1" style="width: 100%; padding: 6px; border-radius: 8px; background: #0f172a; color: #e5e7eb; border: 1px solid #1f2937; outline: none; direction: ltr;">
+        </div>
+        <div>
+          <label style="color: var(--muted); font-size: 12px; display: block; margin-bottom: 5px;">تعداد نقاط</label>
+          <input type="number" id="sweepPoints" value="50" min="5" max="200" style="width: 100%; padding: 6px; border-radius: 8px; background: #0f172a; color: #e5e7eb; border: 1px solid #1f2937; outline: none; direction: ltr;">
+        </div>
+      </div>
+      
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button class="btn" id="startSweepBtn">
+          <span>⚡</span>
+          <span>شروع Sweep</span>
+        </button>
+        <button class="btn secondary" id="stopSweepBtn" disabled>
+          <span>⏹</span>
+          <span>توقف</span>
+        </button>
+      </div>
+      
+      <div style="margin-top: 12px;">
+        <div style="display: flex; justify-content: space-between; color: var(--muted); font-size: 11px;">
+          <span id="sweepProgressText">آماده برای شروع</span>
+          <span id="sweepPercent">0%</span>
+        </div>
+        <div style="width: 100%; height: 4px; background: #0f172a; border-radius: 999px; margin-top: 5px; overflow: hidden;">
+          <div id="sweepProgressBar" style="width: 0%; height: 100%; background: var(--accent); border-radius: 999px; transition: width 0.1s;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card data-card">
+      <div class="card-header">
+        <div>
+          <h3>جدول ثبت داده‌ها</h3>
+          <div class="sub">ثبت و انجام برازش خطی (Linear Regression)</div>
+        </div>
+      </div>
+      <div class="data-toolbar">
+        <div class="data-toolbar-right">
+          <button class="btn" id="addPointBtn"><span class="btn-icon">✚</span><span>ثبت نقطه فعلی</span></button>
+          <button class="btn secondary" id="clearDataBtn"><span class="btn-icon">🗑</span><span>پاک‌کردن</span></button>
+        </div>
+        <div class="data-toolbar-left">
+          <button class="btn secondary" id="fitLineBtn" style="border-color: #22c55e;"><span class="btn-icon">📈</span><span>انجام برازش خطی</span></button>
+        </div>
+      </div>
+
+      <div class="table-wrapper" id="tableWrapper">
+        <table class="data-table">
+          <thead>
+            <tr><th>ردیف</th><th>R (Ω)</th><th>I (A)</th><th>U (V)</th><th>P (W)</th></tr>
+          </thead>
+          <tbody id="dataTableBody"></tbody>
+        </table>
+      </div>
+
+      <div class="fit-results">
+        <span id="fitEquation">U = ε - rI</span>
+        <span id="fitRi" class="fit-ri">r = --- Ω</span>
+        <span id="fitEmf">ε = --- V</span>
+        <span id="fitError" class="fit-error">خطا = --- %</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h3>تئوری و دستورالعمل آزمایش</h3>
+        </div>
+      </div>
+      <div class="theory-box">
+        <div class="theory-section-title">فیزیک منبع تغذیه واقعی و افت پتانسیل</div>
+        <ul>
+            <li>در مدل‌های ایده‌آل، باتری صرفاً به عنوان یک منبع ولتاژ ثابت نمایش داده می‌شود. اما در واقعیت، فعل و انفعالات شیمیایی و ساختار فیزیکی باتری مقاومتی در برابر عبور جریان ایجاد می‌کند که به آن <span class="highlight-blue">مقاومت داخلی (r)</span> می‌گویند.</li>
+            <li>بنابراین، یک باتری واقعی به صورت یک منبع نیروی محرکه الکتریکی (<span class="highlight-white">ε</span>) که با یک مقاومت داخلی (<span class="highlight-white">r</span>) سِری شده است مدل می‌شود (مدل معادل تونن).</li>
+            <li>هنگامی که مدار بسته شده و جریان (<span class="highlight-white">I</span>) از باتری کشیده می‌شود، بخشی از ولتاژ تولید شده در داخل خود باتری افت می‌کند. ولتاژی که به مصرف‌کننده می‌رسد (<span class="highlight-blue">ولتاژ ترمینال U</span>) از رابطه خطی <span class="highlight-white" dir="ltr">U = ε - Ir</span> به دست می‌آید.</li>
+        </ul>
+
+        <div class="theory-section-title">قضیه انتقال توان ماکزیمم (Maximum Power Transfer)</div>
+        <ul>
+            <li>توان مصرفی در مقاومت بار (R) از رابطه <span class="highlight-white" dir="ltr">P = I²R</span> یا <span class="highlight-white" dir="ltr">P = U × I</span> محاسبه می‌گردد.</li>
+            <li>با جایگذاری جریان، رابطه توان به صورت <span class="highlight-white" dir="ltr">P = ε²R / (R + r)²</span> در می‌آید. طبق اصول فیزیک الکتریسیته، مشتق این تابع نشان می‌دهد که <span class="highlight-blue">بیشترین توان (P_max)</span> تنها زمانی به بار خارجی منتقل می‌شود که مقاومت بار دقیقاً برابر با مقاومت داخلی باتری باشد (<span class="highlight-white" dir="ltr">R = r</span>).</li>
+        </ul>
+
+        <div class="theory-section-title">روش انجام آزمایش</div>
+        <p>با استفاده از ابزار <strong>Sweep مقاومت بار</strong>، مقدار مقاومت خارجی مدار (R) را از مقادیر پایین تا بالا تغییر دهید. شبیه‌ساز به طور خودکار ولتاژ و جریان متناظر را ثبت می‌کند. پس از اتمام فرآیند، با کلیک روی <span class="highlight-white">«انجام برازش خطی»</span>، شیب نمودار ولتاژ-جریان استخراج شده و مقدار دقیق مقاومت داخلی و نیروی محرکه باتری توسط رگرسیون خطی محاسبه می‌شود. در نمودار P-R نیز قله منحنی دقیقاً محل تطبیق امپدانس (مساوی شدن بار با مقاومت داخلی) را نمایش می‌دهد.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const emfSlider = document.getElementById('emfSlider');
+    const rSlider = document.getElementById('rLoadSlider'); 
+    const riSlider = document.getElementById('rInternalSlider'); 
+
+    const emfValue = document.getElementById('emfValue');
+    const rValue = document.getElementById('rLoadValue'); 
+    const riValue = document.getElementById('rInternalValue'); 
+
+    const voltageDisplay = document.getElementById('voltageValue'); 
+    const currentDisplay = document.getElementById('currentValue'); 
+    const powerDisplay = document.getElementById('powerValue'); 
+
+    const statusLed = document.getElementById('statusLed');
+    const statusText = document.getElementById('statusText');
+
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    const tableWrapper = document.getElementById('tableWrapper');
+
+    let emf = parseFloat(emfSlider.value);
+    let R   = parseFloat(rSlider.value);
+    let ri  = parseFloat(riSlider.value);
+
+    let current = 0;
+    let voltage = 0;
+    let power = 0;
+    
+    let electrons = [];
+    let isCircuitClosed = false; 
+    
+    let fitE_val = undefined;
+    let fitR_val = undefined;
+
+    const toggleBtn = document.getElementById('toggleCircuitBtn');
+    const circuitStateLabel = document.getElementById('circuitStateLabel');
+
+    toggleBtn.onclick = function() {
+        isCircuitClosed = !isCircuitClosed;
+        circuitStateLabel.innerText = isCircuitClosed ? "مدار بسته است" : "مدار باز است";
+        updateValues(); 
+    };
+
+    function updateValues() {
+        emf = parseFloat(emfSlider.value);
+        ri = parseFloat(riSlider.value);
+        R = parseFloat(rSlider.value);
+
+        emfValue.innerText = emf.toFixed(1);
+        riValue.innerText = ri.toFixed(2);
+        rValue.innerText = R.toFixed(0);
+        
+        if (isCircuitClosed) {
+            current = emf / (R + ri);
+            voltage = emf - (current * ri);
+            power = current * current * R;
+        } else {
+            current = 0;
+            voltage = emf; 
+            power = 0;
+        }
+
+        voltageDisplay.innerText = voltage.toFixed(2);
+        currentDisplay.innerText = current.toFixed(3);
+        powerDisplay.innerText = power.toFixed(3);
+
+        if (current > 0.001) {
+            statusLed.classList.add("on");
+            statusText.innerText = "مدار فعال";
+        } else {
+            statusLed.classList.remove("on");
+            statusText.innerText = "مدار خاموش";
+        }
+        if (fitE_val !== undefined && fitR_val !== undefined) {
+            fitEquation.innerText = `U = (${fitE_val.toFixed(2)}V - ${fitR_val.toFixed(2)} Ω * I) = ${(fitE_val - (fitR_val * current)).toFixed(2)} V`;
+        }
+    }
+
+    emfSlider.oninput = updateValues;
+    riSlider.oninput = updateValues;
+    rSlider.oninput = updateValues;
+
+    updateValues();
+
+    // ========== رسم شماتیک با حفظ مختصات کاربر ==========
+    function createElectrons() {
+        electrons = [];
+        for (let i = 0; i < 35; i++) { 
+            electrons.push({ t: Math.random() });
+        }
+    }
+    createElectrons();
+
+    function drawTerminal(x, y, label) {
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.fillStyle = "#1f2937";
+        ctx.fill();
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        
+        if(label) {
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "14px XB Niloofar";
+            ctx.fillText(label, x - 5, y - 10);
+        }
+    }
+
+    function drawWire() {
+        ctx.strokeStyle = "#A07A5A";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        
+        ctx.moveTo(120, 110); ctx.lineTo(290, 110);
+        ctx.moveTo(350, 110); ctx.lineTo(520, 110);
+
+        ctx.moveTo(520, 110); ctx.lineTo(520, 170);
+        ctx.moveTo(520, 250); ctx.lineTo(520, 310);
+
+        ctx.moveTo(520, 310); ctx.lineTo(120, 310);
+
+        ctx.moveTo(120, 310); ctx.lineTo(120, 215); 
+        ctx.moveTo(120, 195); ctx.lineTo(120, 110);
+        ctx.stroke();
+
+        drawTerminal(120, 110, "C");
+        drawTerminal(520, 110, "A");
+        drawTerminal(520, 310, "B");
+        drawTerminal(120, 310, "D");
+
+        drawTerminal(290, 110, ""); 
+        drawTerminal(350, 110, ""); 
+        ctx.beginPath();
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = isCircuitClosed ? "#38bdf8" : "#9ca3af"; 
+        if (isCircuitClosed) {
+            ctx.moveTo(290, 110); ctx.lineTo(350, 110); 
+        } else {
+            ctx.moveTo(290, 110); ctx.lineTo(340, 75);  
+        }
+        ctx.stroke();
+    }
+
+    function drawResistor() {
+        ctx.strokeStyle = "#14b8a6";
+        ctx.lineWidth = 3;
+        ctx.lineJoin = "round";
+
+        let startX = 520, startY = 170, endY = 250, width = 15, zigzags = 5;
+        let step = (endY - startY) / zigzags;
+
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        for (let i = 0; i < zigzags; i++) {
+            let xOffset = (i % 2 === 0) ? width : -width;
+            ctx.lineTo(startX + xOffset, startY + (i + 0.5) * step);
+        }
+        ctx.lineTo(startX, endY);
+        ctx.stroke();
+
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "16px XB Niloofar";
+        ctx.fillText("R", startX + 25, 215);
+        
+        ctx.beginPath();
+        ctx.moveTo(startX - 25, 235); ctx.lineTo(startX + 25, 185);
+        ctx.strokeStyle = "#ef4444"; ctx.lineWidth = 2; ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo(startX + 25, 185); ctx.lineTo(startX + 12, 185); ctx.lineTo(startX + 25, 198);
+        ctx.fillStyle = "#ef4444"; ctx.fill();
+    }
+
+    function drawBattery() {
+        ctx.strokeStyle = "#ef4444";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(100, 195); ctx.lineTo(140, 195);
+        ctx.stroke();
+
+        ctx.strokeStyle = "#3b82f6";
+        ctx.lineWidth = 7;
+        ctx.beginPath();
+        ctx.moveTo(110, 215); ctx.lineTo(130, 215);
+        ctx.stroke();
+
+        ctx.font = "18px XB Niloofar";
+        ctx.fillStyle = "#ef4444"; ctx.fillText("+", 152, 200); 
+        ctx.fillStyle = "#3b82f6"; ctx.fillText("-", 152, 222); 
+        
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "16px XB Niloofar";
+        ctx.fillText("ε & r(internal resistance)", 290, 250); 
+        
+        ctx.strokeStyle = "#9ca3af";
+        ctx.lineWidth = 1;
+        ctx.setLineDash([5, 5]);
+        ctx.strokeRect(60, 165, 240, 110);
+        ctx.setLineDash([]);
+    }
+
+    function electronPosition(t) {
+        let totalLength = 1200, d = (t % 1) * totalLength;
+        let x, y, visible = true;
+
+        if (d < 400) { 
+            x = 120 + d; y = 110;
+            if (!isCircuitClosed && x > 290 && x < 350) visible = false; 
+        } else if (d < 600) { 
+            x = 520; y = 110 + (d - 400);
+            if (y > 170 && y < 250) visible = false; 
+        } else if (d < 1000) { 
+            x = 520 - (d - 600); y = 310;
+        } else { 
+            x = 120; y = 310 - (d - 1000);
+            if (y > 175 && y < 235) visible = false; 
+        }
+        return { x, y, visible };
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        drawWire();
+        drawResistor();
+        drawBattery();
+        
+        if (isCircuitClosed && current > 0) {
+            let speed = current * 0.005; 
+            electrons.forEach(e => {
+                e.t += speed;
+                if (e.t > 1) e.t -= 1;
+                
+                let pos = electronPosition(e.t);
+                if (pos.visible) {
+                    ctx.beginPath();
+                    ctx.arc(pos.x, pos.y, 3.5, 0, Math.PI * 2);
+                    ctx.fillStyle = "#60a5fa";
+                    ctx.shadowBlur = 8;
+                    ctx.shadowColor = "#38bdf8";
+                    ctx.fill();
+                    ctx.shadowBlur = 0; 
+                }
+            });
+        }
+        requestAnimationFrame(animate);
+    }
+    
+    animate();
+
+    // ========== مدیریت داده‌ها، نمودارها و Sweep ==========
+    const recordBtn = document.getElementById('addPointBtn'); 
+    const clearBtn = document.getElementById('clearDataBtn'); 
+    const fitBtn = document.getElementById('fitLineBtn'); 
+    const dataTableBody = document.getElementById('dataTableBody');
+
+    const fitEquation = document.getElementById('fitEquation');
+    const fitRi = document.getElementById('fitRi');
+    const fitEmf = document.getElementById('fitEmf');
+    const fitError = document.getElementById('fitError');
+
+    let data = [];
+    let uiChart, pChart;
+
+    recordBtn.onclick = function() {
+        let row = document.createElement("tr");
+        let n = data.length + 1;
+        let p = current * current * R; 
+        
+        row.innerHTML = `
+            <td>${n}</td>
+            <td dir="ltr">${R.toFixed(0)}</td>
+            <td dir="ltr">${current.toFixed(3)}</td>
+            <td dir="ltr">${voltage.toFixed(2)}</td>
+            <td dir="ltr">${p.toFixed(3)}</td>
+        `;
+        
+        data.push({ R: R, I: current, U: voltage, P: p });
+        dataTableBody.appendChild(row);
+        tableWrapper.scrollTop = tableWrapper.scrollHeight;
+        updateCharts();
+    }
+
+    clearBtn.onclick = function() {
+        data = [];
+        while(dataTableBody.firstChild) {
+            dataTableBody.removeChild(dataTableBody.firstChild);
+        }
+        fitEquation.innerText = "U = ε - rI";
+        fitE_val = undefined;
+        fitR_val = undefined;
+        fitRi.innerText       = "r = --- Ω";
+        fitEmf.innerText      = "ε = --- V";
+        fitError.innerText    = "خطا = --- %";
+        updateCharts();
+    }
+
+    fitBtn.onclick = function() {
+        if(data.length < 2) return;
+        
+        let sumI = 0, sumU = 0, sumIU = 0, sumI2 = 0;
+        data.forEach(d => {
+            sumI += d.I; sumU += d.U; sumIU += d.I * d.U; sumI2 += d.I * d.I;
+        });
+        
+        let n = data.length;
+        let denom = n * sumI2 - sumI * sumI;
+        
+        if(denom === 0) return;
+        
+        let a = (n * sumIU - sumI * sumU) / denom;
+        let b = (sumU - a * sumI) / n;
+        
+        let r_calc = -a;
+        let E_calc = b;
+        
+        fitE_val = E_calc;
+        fitR_val = r_calc;
+
+        fitEquation.innerText = `U = (${E_calc.toFixed(2)}V - ${r_calc.toFixed(2)} Ω * I) = ${(E_calc - (r_calc * current)).toFixed(2)} V`;
+        fitRi.innerText       = `r = ${r_calc.toFixed(2)} Ω`;
+        fitEmf.innerText      = `ε = ${E_calc.toFixed(2)} V`;
+
+        if(ri > 0) {
+            let err = Math.abs((r_calc - ri) / ri) * 100;
+            fitError.innerText = `خطای محاسبه r = ${err.toFixed(1)} %`;
+        } else {
+            fitError.innerText = "خطا = --- %";
+        }
+        
+        updateCharts();
+    }
+
+    function updateCharts() {
+        uiChart.data.labels = data.map(d => d.I.toFixed(3));
+        uiChart.data.datasets[0].data = data.map(d => d.U);
+        
+        if(data.length >= 2 && fitE_val !== undefined) {
+            let Imin = Math.min(...data.map(d => d.I));
+            let Imax = Math.max(...data.map(d => d.I));
+            
+            let lineI = [Imin, Imax];
+            let lineU = lineI.map(I => fitE_val - fitR_val * I);
+            
+            uiChart.data.datasets[1].data = [
+                {x: Imin, y: lineU[0]},
+                {x: Imax, y: lineU[1]}
+            ];
+            uiChart.data.datasets[0].data = data.map(d => ({x: d.I, y: d.U}));
+        } else {
+            uiChart.data.datasets[1].data = [];
+            uiChart.data.datasets[0].data = data.map(d => ({x: d.I, y: d.U}));
+        }
+        
+        // مخفی‌سازی هوشمند نقاط در صورت تعداد بالای ۲۱ داده
+        let pointRadiusUI = data.length <= 21 ? 4 : 0;
+        let pointRadiusP = data.length <= 21 ? 3 : 0;
+        
+        uiChart.data.datasets[0].pointRadius = pointRadiusUI;
+        uiChart.update();
+        
+        pChart.data.datasets[0].data = data.map(d => ({x: d.R, y: d.P})).sort((a, b) => a.x - b.x);
+        pChart.data.datasets[0].pointRadius = pointRadiusP;
+        pChart.update();
+    }
+
+    uiChart = new Chart(document.getElementById("uiChart"), {
+        type: "scatter",
+        data: {
+            datasets: [
+                {
+                    label: "داده‌ها (U-I)",
+                    data: [], borderColor: "#38bdf8", backgroundColor: "rgba(56,189,248,0.7)", showLine: false, pointRadius: 4
+                },
+                {
+                    label: "خط برازش",
+                    data: [], borderColor: "#22c55e", backgroundColor: "transparent", showLine: true, pointRadius: 0, borderWidth: 2
+                }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { type: 'linear', position: 'bottom', title: { display: true, text: "جریان [I]  (A)", color: "#9ca3af" }, ticks: { color: "#9ca3af" }, grid: { color: "#334155" } },
+                y: { title: { display: true, text: "ولتاژ [U]  (V)", color: "#9ca3af" }, ticks: { color: "#9ca3af" }, grid: { color: "#334155" } }
+            }
+        }
+    });
+
+    pChart = new Chart(document.getElementById("pChart"), {
+        type: "scatter", 
+        data: {
+            datasets: [
+                {
+                    label: "توان خروجی (P)",
+                    data: [], borderColor: "#fb923c", backgroundColor: "rgba(251,146,60,0.5)", showLine: true, pointRadius: 3, tension: 0.3
+                }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { type: 'linear', position: 'bottom', title: { display: true, text: "مقاومت بار [R]  (Ω)", color: "#9ca3af" }, ticks: { color: "#9ca3af" }, grid: { color: "#334155" } },
+                y: { title: { display: true, text: "توان [P]  (W)", color: "#9ca3af" }, ticks: { color: "#9ca3af" }, grid: { color: "#334155" } }
+            }
+        }
+    });
+
+    // منطق Sweep خودکار مقاومت بار (R)
+    let isSweeping = false;
+
+    const startSweepBtn = document.getElementById('startSweepBtn');
+    const stopSweepBtn = document.getElementById('stopSweepBtn');
+    const sweepProgressText = document.getElementById('sweepProgressText');
+    const sweepPercent = document.getElementById('sweepPercent');
+    const sweepProgressBar = document.getElementById('sweepProgressBar');
+
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async function runSweep() {
+        const startR = parseFloat(document.getElementById('sweepStart').value);
+        const endR = parseFloat(document.getElementById('sweepEnd').value);
+        const numPoints = parseInt(document.getElementById('sweepPoints').value);
+        
+        if (startR >= endR) { alert('مقاومت شروع باید کمتر از پایان باشد.'); return; }
+        if (numPoints < 2) { alert('تعداد نقاط باید حداقل 2 باشد.'); return; }
+        
+        // پاکسازی اتوماتیک داده‌های قبلی
+        clearBtn.click();
+        
+        isSweeping = true;
+        startSweepBtn.disabled = true;
+        stopSweepBtn.disabled = false;
+        
+        const wasCircuitClosed = isCircuitClosed;
+        const prevR = R;
+        
+        if (!isCircuitClosed) {
+            isCircuitClosed = true;
+            circuitStateLabel.innerText = "مدار بسته است";
+        }
+        
+        sweepProgressText.innerText = `در حال Sweep مقاومت بار...`;
+        const stepR = (endR - startR) / (numPoints - 1);
+        
+        for (let i = 0; i < numPoints; i++) {
+            if (!isSweeping) {
+                sweepProgressText.innerText = "Sweep متوقف شد.";
+                break;
+            }
+            
+            const valR = startR + i * stepR;
+            rSlider.value = valR;
+            updateValues();
+            
+            let p = current * current * R; 
+            let row = document.createElement("tr");
+            let n = data.length + 1;
+            row.innerHTML = `
+                <td>${n}</td>
+                <td dir="ltr">${R.toFixed(1)}</td>
+                <td dir="ltr">${current.toFixed(3)}</td>
+                <td dir="ltr">${voltage.toFixed(2)}</td>
+                <td dir="ltr">${p.toFixed(3)}</td>
+            `;
+            data.push({ R: R, I: current, U: voltage, P: p });
+            dataTableBody.appendChild(row);
+            
+            tableWrapper.scrollTop = tableWrapper.scrollHeight;
+            updateCharts();
+            
+            const totalProgress = ((i + 1) / numPoints) * 100;
+            sweepPercent.innerText = totalProgress.toFixed(0) + '%';
+            sweepProgressBar.style.width = totalProgress + '%';
+            
+            await sleep(30);
+        }
+        
+        // در پایان سوییپ، برازش خطی را به صورت خودکار انجام بده
+        if (isSweeping) {
+             fitBtn.click();
+        }
+
+        if (!wasCircuitClosed) {
+            isCircuitClosed = false;
+            circuitStateLabel.innerText = "مدار باز است";
+        }
+        
+        rSlider.value = prevR;
+        updateValues();
+        
+        isSweeping = false;
+        startSweepBtn.disabled = false;
+        stopSweepBtn.disabled = true;
+        
+        if (sweepProgressText.innerText !== "Sweep متوقف شد.") {
+            sweepProgressText.innerText = "Sweep با موفقیت کامل شد.";
+        }
+    }
+
+    startSweepBtn.addEventListener('click', runSweep);
+
+    stopSweepBtn.addEventListener('click', function() {
+        isSweeping = false;
+        startSweepBtn.disabled = false;
+        stopSweepBtn.disabled = true;
+        sweepProgressText.innerText = "در حال توقف...";
+    });
+
+  </script>
+</body>
+</html>

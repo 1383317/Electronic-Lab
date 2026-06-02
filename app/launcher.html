@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>آزمایشگاه الکترونیک</title>
+  <style>
+    @font-face {
+      font-family: 'XB Niloofar';
+      src: url('Fonts/XB Niloofar.ttf') format('truetype');
+      font-weight: normal; font-style: normal;
+    }
+
+    :root {
+      --bg:        #020917;
+      --panel:     #060f1e;
+      --card:      #0a1628;
+      --border:    #0f2040;
+      --border-h:  #1a4a8a;
+      --accent:    #38bdf8;
+      --accent2:   #0ea5e9;
+      --gold:      #f59e0b;
+      --text:      #e2e8f0;
+      --muted:     #64748b;
+      --success:   #22c55e;
+      --glow:      rgba(56,189,248,0.12);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'XB Niloofar', Tahoma, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* ── Animated background grid ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background-image:
+        linear-gradient(rgba(56,189,248,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(56,189,248,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      animation: gridDrift 20s linear infinite;
+    }
+    @keyframes gridDrift {
+      0%   { background-position: 0 0; }
+      100% { background-position: 40px 40px; }
+    }
+
+    /* ── Radial glow blobs ── */
+    .blob {
+      position: fixed; border-radius: 50%; filter: blur(80px);
+      pointer-events: none; z-index: 0; opacity: 0.25;
+    }
+    .blob-1 { width: 500px; height: 500px; background: #0ea5e9; top: -150px; right: -150px; }
+    .blob-2 { width: 400px; height: 400px; background: #6366f1; bottom: -100px; left: -100px; }
+
+    /* ── LAUNCHER ── */
+    #launcher-page {
+      position: relative; z-index: 1;
+      max-width: 960px; margin: 0 auto;
+      padding: 36px 24px 60px;
+      display: flex; flex-direction: column; align-items: center; gap: 32px;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      width: 100%; display: flex; justify-content: space-between; align-items: center;
+    }
+    .topbar .uni {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .topbar .uni img {
+      height: 84px;
+      width : 84px;
+      object-fit: contain;
+      filter: drop-shadow(0 0 6px rgba(56,189,248,0.4));
+    }
+    .topbar .uni-text { font-size: 12px; color: var(--muted); line-height: 1.6; }
+    .topbar .uni-text strong { color: var(--text); font-size: 13px; display: block; }
+
+    /* ── Social Buttons (Telegram & GitHub) ── */
+    .social-links {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .social-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      text-decoration: none;
+      transition: all 0.25s ease;
+      cursor: pointer;
+    }
+
+    /* GitHub Specific Styles */
+    .github-btn {
+      background: transparent;
+      border: none;
+      color: #e2e8f0;
+    }
+    .github-btn svg {
+      width: 38px;
+      height: 38px;
+    }
+    .github-btn:hover {
+      transform: translateY(-2px) scale(1.21);
+      color: #fff;
+      filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.25));
+    }
+
+    /* Telegram Specific Styles */
+    .telegram-btn {
+      background: linear-gradient(135deg, #27A7E7, #0088cc);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #fff;
+      box-shadow:
+        0 0 15px rgba(39, 167, 231, 0.35),
+        inset 0 1px 1px rgba(255, 255, 255, 0.15);
+    }
+    .telegram-btn svg {
+      width: 20px;
+      height: 20px;
+    }
+    .telegram-btn:hover {
+      transform: translateY(-2px) scale(1.21);
+      box-shadow:
+        0 0 25px rgba(39, 167, 231, 0.65),
+        0 0 45px rgba(39, 167, 231, 0.25);
+    }
+
+    /* ── Hero ── */
+    .hero { text-align: center; padding: 8px 0 4px; }
+    .hero .tag {
+      display: inline-block; font-size: 11px; letter-spacing: 2px;
+      color: var(--accent); background: rgba(56,189,248,0.08);
+      border: 1px solid rgba(56,189,248,0.2); border-radius: 999px;
+      padding: 4px 14px; margin-bottom: 16px; text-transform: uppercase;
+    }
+    .hero h1 {
+      font-size: 26px; font-weight: 700; color: #f8fafc;
+      line-height: 1.4; margin-bottom: 10px;
+    }
+    .hero h1 span { color: var(--accent); }
+    .hero p { font-size: 13px; color: var(--muted); line-height: 1.8; }
+
+    /* ── Divider ── */
+    .divider {
+      width: 100%; display: flex; align-items: center; gap: 14px;
+    }
+    .divider span { font-size: 21px; color: var(--muted); white-space: nowrap; }
+    .divider::before, .divider::after {
+      content: ''; flex: 1; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--border), transparent);
+    }
+
+    /* ── Cards grid ── */
+    .grid {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+      gap: 14px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px; padding: 20px 18px;
+      cursor: pointer; transition: all 0.25s;
+      display: flex; align-items: flex-start; gap: 14px;
+      position: relative; overflow: hidden;
+      user-select: none;
+    }
+    .card::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(circle at 30% 50%, var(--glow), transparent 70%);
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .card:hover { border-color: var(--border-h); transform: translateY(-3px); box-shadow: 0 8px 30px rgba(0,0,0,0.4), 0 0 0 1px var(--border-h); }
+    .card:hover::before { opacity: 1; }
+    .card:active { transform: translateY(-1px); }
+
+    .card-icon {
+      font-size: 26px; min-width: 44px; height: 44px;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(56,189,248,0.07); border: 1px solid rgba(56,189,248,0.12);
+      border-radius: 10px; flex-shrink: 0;
+    }
+    .card-body { flex: 1; min-width: 0; }
+    .card-body h3 {
+      font-size: 14px; color: #f1f5f9; margin-bottom: 5px; line-height: 1.4;
+    }
+    .card-body p { font-size: 11.5px; color: var(--muted); line-height: 1.7; }
+
+    .badge {
+      position: absolute; top: 14px; left: 14px;
+      background: rgba(56,189,248,0.1); color: var(--accent);
+      border: 1px solid rgba(56,189,248,0.2);
+      font-size: 9.5px; padding: 2px 8px; border-radius: 999px;
+      font-family: monospace; letter-spacing: 0.5px;
+    }
+
+    /* ── Status bar ── */
+    .statusbar {
+      width: 100%; display: flex; justify-content: space-between;
+      align-items: center; padding: 10px 16px;
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 10px; font-size: 11px;
+    }
+    .statusbar .left { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+    .statusbar .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); box-shadow: 0 0 6px var(--success); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    .statusbar .right { color: var(--muted); font-family: monospace; }
+
+    /* ── Entrance animation ── */
+    #launcher-page > * { animation: fadeUp 0.5s ease both; }
+    #launcher-page > *:nth-child(1) { animation-delay: 0.05s; }
+    #launcher-page > *:nth-child(2) { animation-delay: 0.12s; }
+    #launcher-page > *:nth-child(3) { animation-delay: 0.18s; }
+    #launcher-page > *:nth-child(4) { animation-delay: 0.24s; }
+    #launcher-page > *:nth-child(5) { animation-delay: 0.30s; }
+    #launcher-page > *:nth-child(6) { animation-delay: 0.36s; }
+    .grid .card:nth-child(1) { animation-delay: 0.30s; }
+    .grid .card:nth-child(2) { animation-delay: 0.36s; }
+    .grid .card:nth-child(3) { animation-delay: 0.42s; }
+    .grid .card:nth-child(4) { animation-delay: 0.48s; }
+    .grid .card:nth-child(5) { animation-delay: 0.54s; }
+    .grid .card:nth-child(6) { animation-delay: 0.60s; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── LAB VIEW ── */
+    #lab-view {
+      display: none; position: fixed; inset: 0; z-index: 100;
+      flex-direction: column; background: var(--bg);
+    }
+    #lab-view.active { display: flex; }
+    #lab-topbar {
+      height: 42px; min-height: 42px;
+      display: flex; align-items: center; gap: 12px; padding: 0 16px;
+      background: #060e1c; border-bottom: 1px solid #0f2040;
+      -webkit-app-region: drag; flex-shrink: 0;
+    }
+    #back-btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: rgba(56,189,248,0.08); border: 1px solid rgba(56,189,248,0.18);
+      color: var(--accent); border-radius: 7px; padding: 5px 13px;
+      font-size: 12px; font-family: 'XB Niloofar', Tahoma, sans-serif;
+      cursor: pointer; transition: all 0.2s; -webkit-app-region: no-drag;
+    }
+    #back-btn:hover { background: rgba(56,189,248,0.15); border-color: var(--accent); box-shadow: 0 0 10px rgba(56,189,248,0.2); }
+    #lab-title { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+    #load-bar { height: 2px; background: transparent; position: absolute; top: 42px; left: 0; right: 0; z-index: 101; overflow: hidden; }
+    #load-bar.loading::after {
+      content: ''; position: absolute; top: 0; left: -40%; height: 100%; width: 40%;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      animation: loadSlide 0.9s ease infinite;
+    }
+    @keyframes loadSlide { from { left: -40%; } to { left: 110%; } }
+    #lab-frame { flex: 1; width: 100%; border: none; background: var(--bg); }
+  </style>
+</head>
+<body>
+
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+
+  <div id="launcher-page">
+
+    <div class="topbar">
+      <div class="uni">
+        <img src="credit/IUST.png" alt="IUST" onerror="this.style.display='none'">
+        <div class="uni-text">
+          <strong>دانشگاه علم و صنعت ایران</strong>
+          <strong>استاد: دکتر دباغ کاشانی</strong>
+        </div>
+      </div>
+      
+      <div class="social-links">
+        <a class="social-btn telegram-btn" onclick="openTelegram()" title="Telegram">
+          <svg viewBox="0 0 512 512" fill="currentColor">
+            <path d="M498.1 5.6c10.1 7 15.4 19.1 13.5 31.2l-64 416c-1.5 9.7-7.4 18.2-16 23s-18.9 5.4-28 1.6L284 427.7l-68.5 74.1c-8.9 9.7-22.9 12.9-35.2 8.1S160 493.2 160 480V396.4c0-4 1.5-7.8 4.2-10.7L331.8 202.8c5.8-6.3 5.6-16-.4-22s-15.7-6.4-22-.7L106 360.8 17.7 316.6C7.1 311.3 .3 300.7 0 288.9s5.9-22.8 16.1-28.7l448-256c10.7-6.1 23.9-5.5 34 1.4z"/>
+          </svg>
+        </a>
+
+        <a class="social-btn github-btn" onclick="openGithub()" title="GitHub">
+          <svg viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38
+            0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13
+            -.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66
+            .07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15
+            -.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27
+            .68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12
+            .51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48
+            0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <div class="hero">
+      <div class="tag">Electronic Lab Simulator</div>
+      <h1><span>شبیه‌ساز آزمایشگاه الکترونیک</span></h1>
+      <p>شش آزمایش تعاملی — مقاومت داخلی منبعDC، ویژگی‌های دیودی، دیود زنر، LED، یکسوسازها، ترانزیستورهای BJT و JFET</p>
+    </div>
+
+    <div class="divider"><span>انتخاب آزمایش</span></div>
+
+    <div class="grid">
+
+      <div class="card" onclick="openLab('Internal-Resistance-DC-Power-Supply-Sim.html', 'مقاومت داخلی منبع DC')">
+        <span class="badge">EXP 1</span>
+        <div class="card-icon">🔋</div>
+        <div class="card-body">
+          <h3>مقاومت داخلی منبع DC</h3>
+          <p>اندازه‌گیری مقاومت داخلی و تنظیم ولتاژ منبع تغذیه</p>
+        </div>
+      </div>
+
+      <div class="card" onclick="openLab('diode-characteristics-sim.html', 'مشخصه‌های دیود سیلیکونی')">
+        <span class="badge">EXP 2</span>
+        <div class="card-icon">⚡</div>
+        <div class="card-body">
+          <h3>مشخصه‌های دیود سیلیکونی</h3>
+          <p>رسم منحنی I‑V و بررسی رفتار دیود در بایاس مستقیم و معکوس</p>
+        </div>
+      </div>
+
+      <div class="card" onclick="openLab('Zener-Diode-Characteristics-Sim.html', 'مشخصه‌های دیود زنر')">
+        <span class="badge">EXP 3</span>
+        <div class="card-icon">🔆</div>
+        <div class="card-body">
+          <h3>مشخصه‌های دیود زنر</h3>
+          <p>بررسی ناحیه شکست زنر و رگولاسیون ولتاژ</p>
+        </div>
+      </div>
+
+      <div class="card" onclick="openLab('Light-Emitted-Diode-Characteristics-Sim.html', 'مشخصه‌های دیود LED')">
+        <span class="badge">EXP 4</span>
+        <div class="card-icon">💡</div>
+        <div class="card-body">
+          <h3>مشخصه‌های دیود LED</h3>
+          <p>رسم منحنی مشخصه دیود نورگسیل و بررسی آستانه روشن شدن</p>
+        </div>
+      </div>
+
+      <div class="card" onclick="openLab('Rectifier-Sim.html', 'مدارهای یکسوساز')">
+        <span class="badge">EXP 5</span>
+        <div class="card-icon">〰️</div>
+        <div class="card-body">
+          <h3>مدارهای یکسوساز</h3>
+          <p>یکسوساز نیم‌موج، تمام‌موج و پل دیودی با فیلتر خازنی</p>
+        </div>
+      </div>
+
+      <div class="card" onclick="openLab('Transistors-Sim.html', 'ترانزیستورهای BJT & JFET')">
+        <span class="badge">EXP 6</span>
+        <div class="card-icon">🔬</div>
+        <div class="card-body">
+          <h3>ترانزیستورهای BJT & JFET</h3>
+          <p>خواص دیودی پیوندها، منحنی‌های BD137 و BF244</p>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="statusbar">
+      <div class="left">
+        <div class="dot"></div>
+        <span>سیستم آماده — همه آزمایش‌ها بارگذاری شده‌اند</span>
+      </div>
+      <div class="right">Offline Version &nbsp;|&nbsp;v1.0.0</div>
+    </div>
+
+  </div>
+
+  <div id="lab-view">
+    <div id="load-bar"></div>
+    <div id="lab-topbar">
+      <button id="back-btn" onclick="goBack()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+        بازگشت به لیست
+      </button>
+      <span id="lab-title"></span>
+    </div>
+    <iframe id="lab-frame" allowfullscreen></iframe>
+  </div>
+
+  <script>
+    const { shell } = require('electron');
+    
+    const labView      = document.getElementById('lab-view');
+    const labFrame     = document.getElementById('lab-frame');
+    const labTitle     = document.getElementById('lab-title');
+    const loadBar      = document.getElementById('load-bar');
+    const launcherPage = document.getElementById('launcher-page');
+
+    function openLab(filename, title) {
+      labTitle.textContent = title || filename;
+      loadBar.classList.add('loading');
+      labFrame.onload = () => loadBar.classList.remove('loading');
+      labFrame.src = filename;
+      labView.classList.add('active');
+      launcherPage.style.display = 'none';
+    }
+
+    function goBack() {
+      labFrame.src = 'about:blank';
+      labView.classList.remove('active');
+      launcherPage.style.display = '';
+      loadBar.classList.remove('loading');
+    }
+
+    function openGithub() {
+      shell.openExternal('https://github.com/1383317');
+    }
+    
+    function openTelegram() {
+      shell.openExternal('https://t.me/MRSR83');
+    }
+
+    // بازگشت با دکمه Esc کیبورد
+    document.addEventListener('keydown', (e) => {
+      if (labView.classList.contains('active') && e.key === 'Escape') goBack();
+    });
+  </script>
+</body>
+</html>

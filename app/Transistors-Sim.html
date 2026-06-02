@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>شبیه‌ساز آزمایشگاه ترانزیستور (BJT & JFET)</title>
+  
+  <script src="js/chart.umd.js"></script>
+  
+  <style>
+    @font-face {
+      font-family: 'XB Niloofar';
+      src: url('Fonts/XB Niloofar.ttf') format('truetype');
+      font-weight: normal; font-style: normal;
+    }
+    
+    :root {
+      --bg-color: #0f172a; --panel-bg: #020617; --card-bg: #1e293b;
+      --accent: #38bdf8; --accent-soft: #0ea5e9; --text-main: #e5e7eb;
+      --muted: #9ca3af; --danger: #f97373; --success: #22c55e; --warning: #facc15; --purple: #c084fc;
+      --blue-btn: #2563eb; --blue-btn-hover: #1d4ed8;
+    }
+    
+    * { box-sizing: border-box; }
+    
+    body {
+      margin: 0; padding: 20px 10px 50px;
+      font-family: 'XB Niloofar', Tahoma, sans-serif;
+      background: radial-gradient(circle at top, #1f2937 0, #020617 55%, #020617 100%);
+      color: var(--text-main); direction: rtl; overflow-x: hidden;
+    }
+    
+    h1, h2, h3, h4 { margin: 0; font-weight: 600; }
+    
+    /* اصلاح خطای رندرینگ زیروندها در صفحات HTML */
+    sub { font-size: 0.72em; vertical-align: sub; line-height: 0; }
+    
+    .page-header { text-align: center; margin-bottom: 25px; margin-top: 35px; }
+    .page-header h1 { font-size: 22px; color: #f8fafc; line-height: 1.5; }
+    .page-header .subtitle { font-size: 14px; color: var(--muted); margin-top: 8px; line-height: 1.6; }
+
+    /* ===== CREDITS ===== */
+    .creator-credit {
+      position: absolute; top: 15px; left: 20px; display: flex; align-items: center; gap: 10px;
+      background: rgba(15,23,42,0.7); padding: 6px 14px; border-radius: 10px; border: 1px solid #1f2937; z-index: 1000;
+    }
+    .creator-credit img { height: 35px; width: auto; object-fit: contain; }
+    .creator-credit span { color: #9ca3af; font-size: 13px; font-family: monospace; direction: ltr; font-weight: bold; }
+    
+    .lab-info {
+      position: absolute; top: 12px; right: 20px; display: flex; flex-direction: column; align-items: center;
+      background: rgba(15,23,42,0.7); padding: 5px 15px; border-radius: 10px; border: 1px solid #1f2937;
+      text-align: center; z-index: 1000;
+    }
+    .lab-info .title { color: #f8fafc; font-size: 16px; font-weight: bold; }
+    .lab-info .prof { color: #9ca3af; font-size: 11px; margin-top: 2px; }
+
+    .main-container { display: flex; flex-direction: column; gap: 16px; max-width: 900px; margin: 0 auto; }
+
+    .card {
+      background: radial-gradient(circle at top left, #020617 0, #020617 100%);
+      border-radius: 14px; border: 1px solid #1f2937; padding: 18px;
+      box-shadow: 0 14px 28px rgba(15,23,42,0.85);
+    }
+    
+    .card-header {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;
+      border-bottom: 1px solid #1f2937; padding-bottom: 10px;
+    }
+    .card-header h3 { font-size: 16px; color: #f8fafc; display: flex; align-items: center; gap: 8px; }
+    .card-header .sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+    /* Experiment selector */
+    .exp-selector-wrapper { padding: 6px 0 2px; }
+    .exp-selector {
+      width: 100%; padding: 11px 14px; border-radius: 10px; background: #0f172a; color: var(--accent);
+      border: 2px solid #1e293b; outline: none; font-family: inherit; font-size: 15px; font-weight: bold;
+      cursor: pointer; transition: border-color 0.3s;
+    }
+    .exp-selector:focus { border-color: var(--accent-soft); box-shadow: 0 0 10px rgba(56,189,248,0.2); }
+
+    .controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 13px; margin-bottom: 15px; }
+    .control-group { display: flex; flex-direction: column; gap: 6px; }
+    .control-label { color: var(--muted); font-size: 12px; display: flex; justify-content: space-between; }
+
+    select, input[type="number"] {
+      width: 100%; padding: 8px 12px; border-radius: 8px; background: #0f172a; color: var(--accent);
+      border: 1px solid #1f2937; outline: none; font-family: inherit; font-size: 13px;
+    }
+    
+    input[type="range"] {
+      width: 100%; -webkit-appearance: none; height: 5px; border-radius: 999px;
+      background: #0f172a; outline: none; direction: ltr; margin-top: 8px;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--accent);
+      border: 2px solid #0ea5e9; box-shadow: 0 0 0 3px rgba(56,189,248,0.25); cursor: pointer;
+    }
+
+    .live-values { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    .live-box {
+      background: #0f172a; border-radius: 10px; border: 1px solid #1e293b; padding: 10px;
+      display: flex; flex-direction: column; align-items: center; gap: 5px;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+    }
+    .live-label { color: var(--muted); font-size: 11px; text-align: center; }
+    .live-value { font-variant-numeric: tabular-nums; direction: ltr; font-size: 15px; font-weight: bold; }
+
+    .canvas-container {
+      background: radial-gradient(circle at center, #0f172a 0, #020617 100%);
+      border-radius: 12px; border: 1px solid #1e293b;
+      box-shadow: inset 0 0 15px rgba(0,0,0,0.8);
+      padding: 10px; display: flex; justify-content: center; align-items: center;
+      margin-bottom: 15px; height: 270px;
+    }
+    #circuitCanvas { display: block; max-width: 100%; height: 100%; }
+
+    /* Chart */
+    .chart-box {
+      height: 380px; background: #020617; border-radius: 12px; border: 1px solid #111827;
+      padding: 15px; display: flex; flex-direction: column; position: relative;
+    }
+    canvas.chart { flex: 1; width: 100% !important; height: 100% !important; }
+
+    /* Buttons */
+    .btn {
+      border: 1px solid var(--accent);
+      background: radial-gradient(circle at top, var(--accent-soft) 0, #0284c7 100%);
+      color: #fff; border-radius: 8px; padding: 8px 16px; font-size: 13px; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      transition: 0.2s; font-family: inherit; font-weight: bold;
+    }
+    .btn:hover { opacity: 0.9; box-shadow: 0 0 10px rgba(56,189,248,0.4); }
+    
+    /* دکمه اختصاصی بزرگ و آبی برای ثبت نقطه دستی */
+    .btn-record {
+      width: 100%; padding: 14px; font-size: 16px; margin-top: 15px;
+      background: var(--blue-btn); border: 1px solid var(--blue-btn-hover); color: white;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+    }
+    .btn-record:hover { background: var(--blue-btn-hover); box-shadow: 0 0 15px rgba(37,99,235,0.5); }
+
+    .btn.secondary { border-color: #4b5563; background: #1f2937; color: #e5e7eb; }
+    .btn.secondary:hover { background: #374151; box-shadow: none; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); }
+
+    /* Table (Overflow Fixed for Mobile) */
+    .table-wrapper {
+      max-height: 250px; overflow-x: auto; overflow-y: auto; border-radius: 8px;
+      border: 1px solid #1f2937; background: #0f172a; margin-bottom: 15px;
+    }
+    .table-wrapper::-webkit-scrollbar { width: 6px; height: 6px; }
+    .table-wrapper::-webkit-scrollbar-track { background: #020617; }
+    .table-wrapper::-webkit-scrollbar-thumb { background: var(--accent-soft); border-radius: 10px; }
+    table.data-table { width: 100%; border-collapse: collapse; text-align: center; }
+    table.data-table th, table.data-table td { border-bottom: 1px solid #1e293b; padding: 8px 10px; font-variant-numeric: tabular-nums; font-size: 13px; }
+    table.data-table th { color: var(--accent); background: #020617; position: sticky; top: 0; z-index: 10; font-weight: normal; white-space: nowrap; }
+    table.data-table td { color: #e5e7eb; direction: ltr; white-space: nowrap;}
+    table.data-table tbody tr:hover { background: rgba(56,189,248,0.08); }
+
+    /* Theory Boxes */
+    .theory-box p { font-size: 13px; color: #9ca3af; line-height: 1.9; margin: 8px 0; text-align: justify; }
+    .theory-box ul { list-style-type: none; padding-right: 0; margin: 8px 0; }
+    .theory-box ul li {
+      font-size: 13px; color: #d1d5db; line-height: 1.85; position: relative;
+      padding-right: 22px; margin-bottom: 10px; text-align: justify;
+    }
+    .theory-box ul li::before { content: "⚡"; position: absolute; right: 0; top: 2px; font-size: 11px; color: var(--warning); }
+    .theory-section-title {
+      font-size: 15px; font-weight: bold; color: var(--accent);
+      margin-top: 22px; margin-bottom: 8px; border-bottom: 1px solid #1f2937; padding-bottom: 6px;
+    }
+    .formula { font-family: 'Times New Roman', serif; font-style: italic; font-size: 15px; color: var(--success); display: inline-block; }
+    .math-block { text-align: center; margin: 10px 0; background: #0f172a; padding: 10px; border-radius: 8px; border: 1px dashed #1e293b; }
+
+    .dastoor-box { display: none; }
+    .dastoor-box.active { display: block; animation: fadeIn 0.4s; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+    .dastoor-step {
+      font-size: 13px; color: #d1d5db; line-height: 1.9; position: relative;
+      padding-right: 28px; margin-bottom: 10px; text-align: justify;
+    }
+    .dastoor-step::before {
+      content: attr(data-n); position: absolute; right: 0; top: 1px;
+      font-size: 11px; font-weight: bold; color: var(--accent);
+      background: #1e293b; border-radius: 50%; width: 18px; height: 18px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .dastoor-title { font-size: 14px; font-weight: bold; color: var(--warning); margin: 14px 0 6px; }
+    
+    .theory-table-responsive { overflow-x: auto; width: 100%; margin: 10px 0; border-radius: 8px; border: 1px solid #1f2937; }
+    .dastoor-table { width: 100%; border-collapse: collapse; margin: 0; }
+    .dastoor-table th, .dastoor-table td { border: 1px solid #1f2937; padding: 6px 10px; text-align: center; font-size: 12px; white-space: nowrap;}
+    .dastoor-table th { background: #0f172a; color: var(--accent); }
+    .dastoor-table td { color: #e5e7eb; background: #020617; }
+
+    /* Progress bar */
+    .progress-container { margin-top: 15px; }
+    .progress-bar-bg { width: 100%; height: 6px; background: #0f172a; border-radius: 999px; overflow: hidden; margin-top: 5px; border: 1px solid #1e293b; }
+    #sweepProgressBar { width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent), var(--success)); border-radius: 999px; transition: width 0.1s linear; }
+
+    @media (max-width: 650px) {
+      .creator-credit, .lab-info { position: static; margin: 0 auto 10px; justify-content: center; width: max-content; }
+      .controls-grid, .live-values { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="creator-credit">
+    <span>credit:@MSR_83</span>
+    <img src="credit/IUST.png" alt="University Logo" onerror="this.style.display='none'">
+  </div>
+  <div class="lab-info">
+    <span class="title">آزمایشگاه الکترونیک</span>
+    <span class="prof">استاد : دکتر دباغ کاشانی</span>
+  </div>
+
+  <div class="page-header">
+    <h1>بررسی خواص دیودی پیوندهای ترانزیستور و استخراج مشخصه‌های BJT و JFET</h1>
+    <div class="subtitle">
+      BD137 • BD138 • BF244
+    </div>
+  </div>
+
+  <div class="main-container">
+
+    <div class="card" style="padding-bottom: 10px;">
+      <div class="exp-selector-wrapper">
+        <select id="masterExperimentSelector" class="exp-selector">
+          <option value="EXP4">بررسی خواص دیودی پیوندهای ترانزیستور (NPN/PNP)</option>
+          <option value="EXP5">ثبت مشخصات ترانزیستور BJT (ورودی، کنترلی، خروجی)</option>
+          <option value="EXP6">ثبت مشخصات ترانزیستور اثر میدان JFET</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header" style="border-bottom: none; padding-bottom: 0;">
+        <div>
+          <h3 id="panelTitle">تنظیمات مدار</h3>
+          <div class="sub" id="panelSub"></div>
+        </div>
+      </div>
+      <div class="canvas-container">
+        <canvas id="circuitCanvas" width="860" height="270"></canvas>
+      </div>
+      
+      <div id="dynamicControls" class="controls-grid"></div>
+      <div id="dynamicLiveValues" class="live-values" style="margin-top:10px;"></div>
+      
+      <button class="btn btn-record" id="btnRecordPoint">
+        <span style="font-size: 18px;">📌</span><span> ثبت نقطه </span>
+      </button>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h3>جمع‌آوری خودکار داده‌ها (Sweep)</h3>
+          <div class="sub">تعیین بازه ولتاژ، تعداد نقاط و نوع اجرای جاروب برای رسم منحنی کامل</div>
+        </div>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 15px;">
+        <div style="grid-column: 1 / -1;">
+          <label style="color: var(--muted); font-size: 12px; display: block; margin-bottom: 5px;">حالت اجرای جاروب (رسم خانواده منحنی‌ها)</label>
+          <select id="sweepTargetMode" style="width: 100%; padding: 8px; border-radius: 8px; background: #0f172a; color: #e5e7eb; border: 1px solid #1f2937; outline: none;"></select>
+        </div>
+        <div>
+          <label style="color: var(--muted); font-size: 12px; display: block; margin-bottom: 5px;">ولتاژ شروع (V)</label>
+          <input type="number" id="sweepStart" value="0" min="0" max="15" step="0.1" dir="ltr">
+        </div>
+        <div>
+          <label style="color: var(--muted); font-size: 12px; display: block; margin-bottom: 5px;">ولتاژ پایان (V)</label>
+          <input type="number" id="sweepEnd" value="3" min="0" max="15" step="0.1" dir="ltr">
+        </div>
+        <div>
+          <label style="color: var(--muted); font-size: 12px; display: block; margin-bottom: 5px;">تعداد نقاط</label>
+          <input type="number" id="sweepPoints" value="60" min="5" max="200" dir="ltr">
+        </div>
+      </div>
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button class="btn" id="btnSweep">
+          <span>⚡</span><span>شروع Sweep</span>
+        </button>
+        <button class="btn secondary" id="stopSweepBtn" disabled>
+          <span>⏹</span><span>توقف</span>
+        </button>
+      </div>
+      <div class="progress-container">
+        <div style="display: flex; justify-content: space-between; color: var(--muted); font-size: 11px;">
+          <span id="sweepProgressText">آماده برای شروع</span>
+          <span id="sweepPercent">0%</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div id="sweepProgressBar"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h3 id="chartTitle">نمودار مشخصه</h3>
+          <div class="sub" id="chartSub"></div>
+        </div>
+        <div>
+          <button class="btn secondary" id="btnClearChart" style="padding: 4px 10px; font-size: 12px;">🗑 پاک‌کردن گراف</button>
+        </div>
+      </div>
+      <div class="chart-box">
+        <canvas class="chart" id="transistorChart"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h3 id="tableTitle">جدول ثبت داده‌ها</h3>
+      </div>
+      <div class="table-wrapper">
+        <table class="data-table" id="dataTable">
+          <thead id="tableHead"></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h3>📚 خلاصه روابط و تئوری آزمایشگاه ترانزیستور</h3>
+      </div>
+      <div class="theory-box">
+
+        <div id="theory_EXP4" class="dastoor-box">
+          <div class="theory-section-title">تئوری: بررسی خواص دیودی پیوندهای ترانزیستور</div>
+          <p>ترانزیستورهای دوقطبی (BJT) از سه لایه نیم‌رسانا تشکیل شده‌اند که به ترتیب منتشرکننده (E)، پایه (B) و جمع‌کننده (C) نامیده می‌شوند. آرایش لایه‌ها می‌تواند به صورت NPN یا PNP باشد. لایه پایه بسیار نازک بوده و حامل‌های بار تولیدشده در یک اتصال می‌توانند به اتصال دیگر منتقل شوند.</p>
+          <p>از دیدگاه ساختاری، هر ترانزیستور دوقطبی معادل دو دیود پشت‌به‌پشت است. اتصال پایه–منتشرکننده (BE) و اتصال پایه–جمع‌کننده (BC) هر کدام مانند یک دیود رفتار می‌کنند. برای ترانزیستور <strong>NPN</strong>، اگر پایه (B) دارای پلاریته مثبت باشد، هر دو اتصال BE و BC در حالت رسانش (Forward Bias) قرار می‌گیرند. برای ترانزیستور <strong>PNP</strong> این شرایط زمانی برقرار است که پایه دارای پلاریته منفی باشد.</p>
+          <p>اتصال جمع‌کننده–منتشرکننده (CE) برخلاف دو اتصال قبلی رفتار دیودی مستقیم نشان نمی‌دهد، زیرا هر دو لایه از یک نوع نیم‌رسانا هستند و جریان قابل توجهی در هر دو جهت جاری نمی‌شود مگر آنکه پایه فعال باشد.</p>
+          <p>ولتاژ آستانه اتصال BE برای ترانزیستورهای سیلیکونی حدود <span class="formula" dir="ltr">0.6 – 0.7 V</span> است، دقیقاً مشابه یک دیود سیلیکونی معمولی.</p>
+          
+          <div class="theory-section-title">دستورکار آزمایش</div>
+          <div class="dastoor-title">الف — اتصال پایه–منتشرکننده (BE):</div>
+          <div class="dastoor-step" data-n="۱">ترانزیستور NPN-BD137 را در مدار قرار دهید. پلاریته مثبت منبع تغذیه را به پایه (B) و پلاریته منفی را به منتشرکننده (E) وصل کنید.</div>
+          <div class="dastoor-step" data-n="۲">ولتاژ را از صفر افزایش دهید و جریان را مشاهده کنید. جریان را تا <span class="formula" dir="ltr">I = 5 mA</span> افزایش دهید. ولتاژ نباید از <span class="formula" dir="ltr">2 V</span> تجاوز کند.</div>
+          <div class="dastoor-step" data-n="۳">جفت ولتاژ U و جریان I را در جدول (۱) ثبت کنید. سپس پلاریته را معکوس کرده و آزمایش را تکرار نمایید.</div>
+          <div class="dastoor-title">ب — اتصال پایه–جمع‌کننده (BC):</div>
+          <div class="dastoor-step" data-n="۴">پلاریته مثبت را به پایه (B) و منفی را به جمع‌کننده (C) وصل کنید. مراحل ۲ و ۳ را تکرار کرده و جدول (۲) را تکمیل کنید.</div>
+          <div class="dastoor-title">پ — اتصال جمع‌کننده–منتشرکننده (CE):</div>
+          <div class="dastoor-step" data-n="۵">منبع را با پلاریته مثبت به جمع‌کننده (C) و یک مقاومت <span class="formula" dir="ltr">100 Ω</span> به صورت سری متصل کنید. منفی را به منتشرکننده (E) وصل نمایید. جدول (۳) را تکمیل کنید.</div>
+          <div class="dastoor-step" data-n="۶">مراحل الف تا پ را برای ترانزیستور PNP-BD138 تکرار کرده و جداول (۴) تا (۶) را تکمیل نمایید.</div>
+
+          <div class="theory-section-title">روابط و فرمول‌های مرتبط</div>
+          <ul>
+            <li>معادله دیود شاکلی (رفتار اتصال BE): <div class="math-block"><span class="formula" dir="ltr">I = I<sub>S</sub>(e<sup>V / (n&middot;V<sub>T</sub>)</sup> &minus; 1)</span></div> که در آن <span class="formula" dir="ltr">V<sub>T</sub> &asymp; 26 mV</span> در دمای اتاق و <span class="formula" dir="ltr">n &asymp; 1.0</span> برای پیوند ایده‌آل سیلیکون است. مقدار <span class="formula" dir="ltr">I<sub>S</sub> &asymp; 2&times;10<sup>&minus;14</sup> A</span> برای ترانزیستورهای سیلیکونی سیگنال کوچک تا توان متوسط.</li>
+            <li>مقاومت استاتیک اتصال: <span class="formula" dir="ltr">R<sub>static</sub> = V / I</span>. در ناحیه رسانش این مقدار بسیار کوچک و در ناحیه قطع بسیار بزرگ است.</li>
+          </ul>
+        </div>
+
+        <div id="theory_EXP5" class="dastoor-box">
+          <div class="theory-section-title">تئوری: ثبت مشخصات ترانزیستور BJT (BD137-NPN)</div>
+          <p>ترانزیستور دوقطبی (BJT) یکی از مهم‌ترین ادوات نیم‌رسانا در الکترونیک است. عملکرد آن بر اساس کنترل جریان جمع‌کننده (<span dir="ltr">I<sub>C</sub></span>) توسط جریان پایه (<span dir="ltr">I<sub>B</sub></span>) استوار است. نسبت این دو جریان ضریب تقویت جریان DC یا بتا (&beta;) نامیده می‌شود.</p>
+          <p>رفتار الکتریکی BJT توسط سه دسته مشخصه توصیف می‌شود: مشخصه ورودی که رابطه <span dir="ltr">I<sub>B</sub></span> و <span dir="ltr">U<sub>BE</sub></span> را نشان می‌دهد، مشخصه کنترلی که رابطه <span dir="ltr">I<sub>C</sub></span> و <span dir="ltr">I<sub>B</sub></span> را بیان می‌کند، و مشخصه خروجی که تغییرات <span dir="ltr">I<sub>C</sub></span> با <span dir="ltr">U<sub>CE</sub></span> را در جریان‌های مختلف پایه ترسیم می‌نماید.</p>
+          <p>در <strong>مشخصه ورودی</strong>، اتصال BE مانند یک دیود سیلیکونی رفتار می‌کند. جریان پایه از حدود ۰.۶ ولت شروع به جاری شدن می‌کند و سپس به صورت نمایی افزایش می‌یابد.</p>
+          <p>در <strong>مشخصه کنترلی</strong>، رابطه <span dir="ltr">I<sub>C</sub> = &beta; I<sub>B</sub></span> برقرار است. این رابطه در ناحیه فعال خطی است و شیب خط، مقدار &beta; را مشخص می‌کند. برای BD137، مقدار &beta; = h<sub>FE</sub> در محدوده ۴۰ تا ۲۵۰ است (مقدار تیپیکال ۱۵۰ در شبیه‌ساز).</p>
+          <p>در <strong>مشخصه خروجی</strong>، با ثابت نگه داشتن <span dir="ltr">I<sub>B</sub></span> و تغییر <span dir="ltr">U<sub>CE</sub></span>، رفتار ترانزیستور در دو ناحیه اصلی دیده می‌شود: ناحیه اشباع (که در آن <span dir="ltr">U<sub>CE(sat)</sub> &asymp; 0.1 V تا 0.3 V</span> است) که در آن جریان به مدار خارجی وابسته است، و ناحیه فعال که <span dir="ltr">I<sub>C</sub></span> تقریباً ثابت بوده و تنها به <span dir="ltr">I<sub>B</sub></span> وابسته است.</p>
+          <p>تلفات توان اصلی در اتصال جمع‌کننده–منتشرکننده ایجاد می‌شود. برای BD137، حداکثر توان مجاز ۱۵ وات است و باید از عبور از منحنی هایپربولیک <span dir="ltr">P<sub>max</sub> = U<sub>CE</sub> &times; I<sub>C</sub></span> جلوگیری شود.</p>
+
+          <div class="theory-section-title">دستورکار آزمایش</div>
+          <div class="dastoor-title">الف — مشخصه ورودی (<span dir="ltr">I<sub>B</sub> = f(U<sub>BE</sub>)</span>):</div>
+          <div class="dastoor-step" data-n="۱">مدار شکل (۲) دستورکار را ببندید. پتانسیومتر <span dir="ltr">1 kΩ</span> را طوری تنظیم کنید که ولتاژ <span dir="ltr">U<sub>BE</sub> = 0</span> باشد.</div>
+          <div class="dastoor-step" data-n="۲">با چرخش پتانسیومتر، ولتاژ <span dir="ltr">U<sub>BE</sub></span> را افزایش دهید. جفت مقادیر <span dir="ltr">U<sub>BE</sub></span> و <span dir="ltr">I<sub>B</sub></span> را در جدول (۱) ثبت کنید.</div>
+          <div class="dastoor-title">ب — مشخصه کنترلی (<span dir="ltr">I<sub>C</sub> = f(I<sub>B</sub>)</span> در <span dir="ltr">U<sub>CE</sub> = const</span>):</div>
+          <div class="dastoor-step" data-n="۳">مدار شکل (۳) را ببندید و مولتیمتر دوم را برای اندازه‌گیری <span dir="ltr">I<sub>C</sub></span> متصل کنید. ولتاژ <span dir="ltr">U<sub>CE</sub></span> را بخوانید و بالانویس جدول (۲) ثبت نمایید.</div>
+          <div class="dastoor-step" data-n="۴">پتانسیومتر را بچرخانید تا <span dir="ltr">I<sub>B</sub></span> از کمینه به بیشینه برسد. جفت مقادیر <span dir="ltr">I<sub>B</sub></span> و <span dir="ltr">I<sub>C</sub></span> را در جدول (۲) ثبت کنید.</div>
+          <div class="dastoor-title">پ — مشخصه خروجی (<span dir="ltr">I<sub>C</sub> = f(U<sub>CE</sub>)</span> در <span dir="ltr">I<sub>B</sub> = const</span>):</div>
+          <div class="dastoor-step" data-n="۵">پتانسیومتر <span dir="ltr">1 kΩ</span> را با <span dir="ltr">47 kΩ</span> جایگزین کنید و <span dir="ltr">220 Ω</span> را سری با جمع‌کننده قرار دهید. جریان <span dir="ltr">I<sub>B</sub></span> را بخوانید و بالانویس جدول (۳) ثبت نمایید.</div>
+          <div class="dastoor-step" data-n="۶">با چرخش پتانسیومتر <span dir="ltr">220 Ω</span> ولتاژ <span dir="ltr">U<sub>CE</sub></span> را از صفر افزایش دهید. جفت مقادیر <span dir="ltr">U<sub>CE</sub></span> و <span dir="ltr">I<sub>C</sub></span> را در جدول (۳) ثبت کنید.</div>
+
+          <div class="theory-section-title">روابط و خواسته‌های آزمایش</div>
+          <ul>
+            <li>ضریب تقویت جریان (<span dir="ltr">&beta;</span> یا <span dir="ltr">h<sub>FE</sub></span>):
+              <div class="math-block"><span class="formula" dir="ltr">&beta; = I<sub>C</sub> / I<sub>B</sub></span></div>
+              شیب مشخصه کنترلی مستقیماً این مقدار را می‌دهد.</li>
+            <li>تلفات توان جمع‌کننده–منتشرکننده:
+              <div class="math-block"><span class="formula" dir="ltr">P = U<sub>CE</sub> &times; I<sub>C</sub></span></div></li>
+          </ul>
+
+          <div class="theory-section-title">جدول‌های دستورکار</div>
+          <p style="color:var(--muted); font-size:12px;">جدول (۱) — مشخصه ورودی <span dir="ltr">I<sub>B</sub> = f(U<sub>BE</sub>)</span>:</p>
+          <div class="theory-table-responsive">
+            <table class="dastoor-table">
+              <tr><th>U<sub>BE</sub> (V)</th><th>0</th><th>0.10</th><th>0.20</th><th>0.30</th><th>0.40</th><th>0.50</th><th>0.59</th><th>0.63</th><th>0.66</th><th>0.68</th><th>0.70</th><th>0.71</th></tr>
+              <tr><th>I<sub>B</sub> (mA)</th><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            </table>
+          </div>
+          <p style="color:var(--muted); font-size:12px; margin-top:12px;">جدول (۲) — مشخصه کنترلی <span dir="ltr">I<sub>C</sub> = f(I<sub>B</sub>)</span>، <span dir="ltr">U<sub>CE</sub> = ___ V</span>:</p>
+          <div class="theory-table-responsive">
+            <table class="dastoor-table">
+              <tr><th>I<sub>B</sub> (mA)</th><th>0.05</th><th>0.1</th><th>0.2</th><th>0.4</th><th>0.5</th><th>1.0</th><th>1.5</th><th>2.0</th><th>2.5</th><th>3.0</th><th>3.4</th></tr>
+              <tr><th>I<sub>C</sub> (mA)</th><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            </table>
+          </div>
+          <p style="color:var(--muted); font-size:12px; margin-top:12px;">جدول (۳) — مشخصه خروجی <span dir="ltr">I<sub>C</sub> = f(U<sub>CE</sub>)</span>، <span dir="ltr">I<sub>B</sub> = ___ mA</span>:</p>
+          <div class="theory-table-responsive">
+            <table class="dastoor-table">
+              <tr><th>U<sub>CE</sub> (V)</th><th>0.02</th><th>0.03</th><th>0.08</th><th>0.11</th><th>0.2</th><th>0.4</th><th>0.6</th><th>0.9</th><th>2.0</th><th>3.0</th><th>4.0</th><th>4.8</th></tr>
+              <tr><th>I<sub>C</sub> (mA)</th><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            </table>
+          </div>
+        </div>
+
+        <div id="theory_EXP6" class="dastoor-box">
+          <div class="theory-section-title">تئوری: ثبت مشخصات ترانزیستور اثر میدان JFET (BF244)</div>
+          <p>ترانزیستورها به دو دسته اصلی تقسیم می‌شوند: ترانزیستورهای دوقطبی (BJT) که در آن‌ها هر دو حامل بار در انتقال جریان نقش دارند، و ترانزیستورهای اثر میدان (FET) که جریان در آن‌ها تنها توسط یک نوع حامل بار ایجاد می‌شود. در ترانزیستورهای اثر میدان، رسانایی کانالِ حاملِ جریان، از طریق میدان الکتریکی کنترل می‌گردد.</p>
+          <p>در JFETهای نوع n-channel (مانند BF244)، الکترودهای اصلی <strong>گیت (G)</strong>، <strong>درین (D)</strong> و <strong>سورس (S)</strong> هستند. جریان درین (<span dir="ltr">I<sub>D</sub></span>) از درین به سورس جاری می‌شود و توسط ولتاژ گیت–سورس (<span dir="ltr">U<sub>GS</sub></span>) کنترل می‌گردد.</p>
+          <p>در بسیاری از کاربردهای سیگنال کوچک، به دلیل ساختار تقریباً متقارن BF244، پایه‌های سورس و درین می‌توانند جابه‌جا شوند.</p>
+          <p>مشخصه خروجی JFET دارای دو ناحیه مشخص است:</p>
+          <ul>
+            <li><strong>ناحیه اهمی (Ohmic/Triode):</strong> در ولتاژهای کوچک <span dir="ltr">U<sub>DS</sub></span>، جریان درین به صورت تقریباً خطی با <span dir="ltr">U<sub>DS</sub></span> افزایش می‌یابد. ترانزیستور مانند یک مقاومت متغیر کنترل‌شده با ولتاژ عمل می‌کند. در این ناحیه: <div class="math-block"><span class="formula" dir="ltr">I<sub>D</sub> &asymp; (2&middot;I<sub>DSS</sub>/V<sub>P</sub><sup>2</sup>)&middot;[(U<sub>GS</sub>&minus;V<sub>P</sub>)&middot;U<sub>DS</sub> &minus; U<sub>DS</sub><sup>2</sup>/2]</span></div></li>
+            <li><strong>ناحیه اشباع (Saturation/Pinch-off):</strong> هنگامی که <span dir="ltr">U<sub>DS</sub></span> از مقدار <span dir="ltr">(U<sub>GS</sub> &minus; V<sub>P</sub>)</span> تجاوز کند، جریان درین تقریباً ثابت می‌ماند و به <span dir="ltr">U<sub>DS</sub></span> وابسته نیست. در این ناحیه: <div class="math-block"><span class="formula" dir="ltr">I<sub>D</sub> = I<sub>DSS</sub>(1 &minus; U<sub>GS</sub>/V<sub>P</sub>)<sup>2</sup></span></div></li>
+          </ul>
+          <p>برای BF244، مقادیر تقریبی: <span class="formula" dir="ltr">I<sub>DSS</sub> &asymp; 12 mA</span> و <span class="formula" dir="ltr">V<sub>P</sub> &asymp; &minus;3 V</span> می‌باشند.</p>
+
+          <div class="theory-section-title">دستورکار آزمایش</div>
+          <div class="dastoor-title">اندازه‌گیری استاتیک (Static Measurement):</div>
+          <div class="dastoor-step" data-n="۱">مدار شکل (۱ب) دستورکار را ببندید. ابتدا مولتیمتر را برای اندازه‌گیری <span dir="ltr">U<sub>GS</sub></span> متصل کنید. ولتاژ منبع را روی ۱۵ ولت تنظیم نمایید.</div>
+          <div class="dastoor-step" data-n="۲">پتانسیومتر <span dir="ltr">220 Ω</span> را طوری تنظیم کنید که <span dir="ltr">U<sub>GS</sub> = 0 V</span> شود. سپس مولتیمتر را برای اندازه‌گیری <span dir="ltr">U<sub>DS</sub></span> عوض کنید.</div>
+          <div class="dastoor-step" data-n="۳">با چرخش پتانسیومتر <span dir="ltr">1 kΩ</span>، ولتاژ <span dir="ltr">U<sub>DS</sub></span> را از صفر افزایش دهید. جفت مقادیر <span dir="ltr">U<sub>DS</sub></span> و <span dir="ltr">I<sub>D</sub></span> را در جدول (۱) ثبت کنید.</div>
+          <div class="dastoor-step" data-n="۴">آزمایش را برای <span dir="ltr">U<sub>GS</sub> = &minus;0.5 V</span> و <span dir="ltr">U<sub>GS</sub> = &minus;1.0 V</span> تکرار کرده و نتایج را در جدول (۱) ثبت نمایید.</div>
+          
+          <div class="theory-section-title">جدول دستورکار و خواسته‌های آزمایش</div>
+          <p style="color:var(--muted); font-size:12px;">جدول (۱) — مشخصه خروجی <span dir="ltr">I<sub>D</sub> = f(U<sub>DS</sub>)</span> در <span dir="ltr">U<sub>GS</sub></span> ثابت:</p>
+          <div class="theory-table-responsive">
+            <table class="dastoor-table">
+              <tr>
+                <th colspan="2">U<sub>GS</sub> = 0V</th>
+                <th colspan="2">U<sub>GS</sub> = &minus;0.5V</th>
+                <th colspan="2">U<sub>GS</sub> = &minus;1.0V</th>
+              </tr>
+              <tr><th>U<sub>DS</sub> (V)</th><th>I<sub>D</sub> (mA)</th><th>U<sub>DS</sub> (V)</th><th>I<sub>D</sub> (mA)</th><th>U<sub>DS</sub> (V)</th><th>I<sub>D</sub> (mA)</th></tr>
+              <tr><td>0</td><td></td><td>0</td><td></td><td>0</td><td></td></tr>
+              <tr><td>0.05</td><td></td><td>0.05</td><td></td><td>0.05</td><td></td></tr>
+              <tr><td>0.10</td><td></td><td>0.10</td><td></td><td>0.10</td><td></td></tr>
+              <tr><td>0.25</td><td></td><td>0.25</td><td></td><td>0.25</td><td></td></tr>
+              <tr><td>0.50</td><td></td><td>0.50</td><td></td><td>0.50</td><td></td></tr>
+              <tr><td>1.0</td><td></td><td>1.0</td><td></td><td>1.0</td><td></td></tr>
+              <tr><td>2.0</td><td></td><td>2.0</td><td></td><td>2.0</td><td></td></tr>
+              <tr><td>5.0</td><td></td><td>5.0</td><td></td><td>5.0</td><td></td></tr>
+              <tr><td>10.0</td><td></td><td>10.0</td><td></td><td>10.0</td><td></td></tr>
+              <tr><td>13.0</td><td></td><td>13.0</td><td></td><td>13.0</td><td></td></tr>
+            </table>
+          </div>
+          <ul style="margin-top:14px;">
+            <li>نمودار <span dir="ltr">I<sub>D</sub> = f(U<sub>DS</sub>)</span> را برای هر سه مقدار <span dir="ltr">U<sub>GS</sub></span> رسم کنید. دو ناحیه اهمی و اشباع را مشخص نمایید.</li>
+            <li>با استفاده از داده‌های جدول، مقادیر <span dir="ltr">I<sub>DSS</sub></span> و <span dir="ltr">V<sub>P</sub></span> (ولتاژ پینچ‌آف) را تعیین کنید.</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+<script>
+// ===================================================
+// 1. STATE & DOM ELEMENTS
+// ===================================================
+const ui = {
+  masterSelect: document.getElementById('masterExperimentSelector'),
+  canvas: document.getElementById('circuitCanvas'),
+  ctx: document.getElementById('circuitCanvas').getContext('2d'),
+  controlsGrid: document.getElementById('dynamicControls'),
+  liveValuesGrid: document.getElementById('dynamicLiveValues'),
+  tableHead: document.getElementById('tableHead'),
+  tableBody: document.getElementById('tableBody'),
+  chartTitle: document.getElementById('chartTitle'),
+  chartSub: document.getElementById('chartSub'),
+  panelTitle: document.getElementById('panelTitle'),
+  panelSub: document.getElementById('panelSub'),
+  
+  // Sweep & Actions UI
+  sweepStart: document.getElementById('sweepStart'),
+  sweepEnd: document.getElementById('sweepEnd'),
+  sweepPoints: document.getElementById('sweepPoints'),
+  sweepTargetMode: document.getElementById('sweepTargetMode'),
+  btnSweep: document.getElementById('btnSweep'),
+  stopSweepBtn: document.getElementById('stopSweepBtn'),
+  btnRecordPoint: document.getElementById('btnRecordPoint'),
+  sweepProgress: document.getElementById('sweepProgressBar'),
+  sweepStatus: document.getElementById('sweepProgressText'),
+  sweepPercent: document.getElementById('sweepPercent'),
+  btnClear: document.getElementById('btnClearChart')
+};
+
+let currentExp = 'EXP4';
+let currentBJTType = 'NPN';
+let currentJunction = 'BE'; 
+
+let chartInstance = null;
+let graphCurves = []; // Array of { isManual, label, color, data: [{x,y}] }
+let sweepCounter = 0;
+let isSweeping = false;
+
+// Color Palette
+const C = {
+  wire: '#9ca3af', res: '#eab308', diode: '#ef4444', bjt: '#e5e7eb',
+  accent: '#38bdf8', bg: '#020617', success: '#22c55e', warning: '#facc15',
+  purple: '#c084fc', danger: '#f97373'
+};
+const curveColors = ['#38bdf8','#22c55e','#facc15','#f97373','#c084fc','#e879f9','#fb923c','#a3e635'];
+
+// Physics Constants — BD137/BD138 datasheet (β=150) & BF244B datasheet (Vp=-3V, Idss=12mA)
+const BJT_BETA  = 150;    // h_FE typical for BD137/BD138
+const JFET_VP   = -3.0;   // pinch-off voltage, BF244B typical
+const JFET_IDSS = 12.0;   // mA, drain saturation current at Vgs=0, BF244B typical
+
+// ===================================================
+// 2. CANVAS DRAWING HELPERS (With Custom Subscripts)
+// ===================================================
+function dot(x, y) {
+  ui.ctx.beginPath(); ui.ctx.arc(x, y, 4, 0, 2*Math.PI);
+  ui.ctx.fillStyle = C.wire; ui.ctx.fill();
+}
+
+function drawWire(pts) {
+  ui.ctx.beginPath(); ui.ctx.strokeStyle = C.wire; ui.ctx.lineWidth = 2;
+  ui.ctx.moveTo(pts[0][0], pts[0][1]);
+  for(let i=1;i<pts.length;i++) ui.ctx.lineTo(pts[i][0], pts[i][1]);
+  ui.ctx.stroke();
+}
+
+// تابع اختصاصی رسم متون با زیروند (Subscript) برای دور زدن محدودیت‌های Canvas
+function drawTextSub(ctx, baseTxt, subTxt, x, y, color = C.accent, fontBase = 'bold 13px Tahoma', fontSub = 'bold 10px Tahoma') {
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.textAlign = 'left';
+  ctx.direction = 'ltr';
+  ctx.font = fontBase;
+  ctx.fillText(baseTxt, x, y);
+  if(subTxt) {
+      let w = ctx.measureText(baseTxt).width;
+      ctx.font = fontSub;
+      ctx.fillText(subTxt, x + w + 1, y + 4);
+  }
+  ctx.restore();
+}
+
+function drawResistor(x, y, horiz, label) {
+  const c = ui.ctx; c.strokeStyle = C.wire; c.lineWidth = 2;
+  if (!horiz) {
+    const pad=18, bw=12, bh=44;
+    c.beginPath(); c.moveTo(x, y); c.lineTo(x, y+pad); c.stroke();
+    c.strokeStyle = C.res; c.strokeRect(x-bw, y+pad, bw*2, bh);
+    c.beginPath(); c.strokeStyle = C.wire; c.moveTo(x, y+pad+bh); c.lineTo(x, y+pad+bh+pad); c.stroke();
+    if(label) drawTextSub(c, label, "", x+15, y+pad+bh/2+5, C.res, '11px Tahoma');
+  } else {
+    const pad=18, bw=44, bh=12;
+    c.beginPath(); c.moveTo(x, y); c.lineTo(x+pad, y); c.stroke();
+    c.strokeStyle = C.res; c.strokeRect(x+pad, y-bh, bw, bh*2);
+    c.beginPath(); c.strokeStyle = C.wire; c.moveTo(x+pad+bw, y); c.lineTo(x+pad+bw+pad, y); c.stroke();
+    if(label) drawTextSub(c, label, "", x+pad+4, y-16, C.res, '11px Tahoma');
+  }
+}
+
+function drawMeter(x, y, type, color) {
+  const c = ui.ctx; const r = 15;
+  c.beginPath(); c.arc(x, y, r, 0, 2*Math.PI);
+  c.fillStyle = '#0f172a'; c.fill();
+  c.strokeStyle = color || C.accent; c.lineWidth = 2; c.stroke();
+  c.fillStyle = color || C.bjt; c.font = 'bold 13px Tahoma'; c.textAlign='center';
+  c.fillText(type, x, y+5); c.textAlign='left';
+}
+
+function drawBJT_symbol(cx, cy, type) {
+  const c = ui.ctx; c.lineWidth = 2; c.strokeStyle = C.bjt;
+  c.beginPath(); c.moveTo(cx-35, cy); c.lineTo(cx-14, cy); c.stroke();
+  c.lineWidth = 3;
+  c.beginPath(); c.moveTo(cx-14, cy-18); c.lineTo(cx-14, cy+18); c.stroke();
+  c.lineWidth = 2;
+  c.beginPath(); c.moveTo(cx-14, cy-10); c.lineTo(cx+12, cy-28); c.lineTo(cx+12, cy-50); c.stroke();
+  c.beginPath(); c.moveTo(cx-14, cy+10); c.lineTo(cx+12, cy+28); c.lineTo(cx+12, cy+50); c.stroke();
+  
+  c.fillStyle = C.bjt;
+  if(type === 'NPN') {
+    c.beginPath(); c.moveTo(cx+12, cy+28); c.lineTo(cx+3, cy+22); c.lineTo(cx+10, cy+16); c.closePath(); c.fill();
+  } else {
+    c.beginPath(); c.moveTo(cx-5, cy+12); c.lineTo(cx+5, cy+20); c.lineTo(cx+1, cy+25); c.closePath(); c.fill();
+  }
+  
+  c.strokeStyle = '#4b5563'; c.lineWidth = 1.5;
+  c.beginPath(); c.arc(cx, cy, 28, 0, 2*Math.PI); c.stroke();
+  
+  drawTextSub(c, "B", "", cx-52, cy+5, C.accent);
+  drawTextSub(c, "C", "", cx+16, cy-38, C.accent);
+  drawTextSub(c, "E", "", cx+16, cy+44, C.accent);
+}
+
+function drawJFET_symbol(cx, cy) {
+  const c = ui.ctx; c.lineWidth = 2; c.strokeStyle = C.bjt;
+  c.beginPath(); c.moveTo(cx-38, cy); c.lineTo(cx-14, cy); c.stroke();
+  c.lineWidth = 3;
+  c.beginPath(); c.moveTo(cx-14, cy-18); c.lineTo(cx-14, cy+18); c.stroke();
+  c.lineWidth = 2;
+  c.beginPath(); c.moveTo(cx-14, cy-10); c.lineTo(cx+10, cy-10); c.lineTo(cx+10, cy-50); c.stroke();
+  c.beginPath(); c.moveTo(cx-14, cy+10); c.lineTo(cx+10, cy+10); c.lineTo(cx+10, cy+50); c.stroke();
+  
+  c.fillStyle = C.bjt;
+  c.beginPath(); c.moveTo(cx-14, cy); c.lineTo(cx-24, cy-6); c.lineTo(cx-24, cy+6); c.closePath(); c.fill();
+  
+  c.strokeStyle = '#4b5563'; c.lineWidth = 1.5;
+  c.beginPath(); c.arc(cx, cy, 30, 0, 2*Math.PI); c.stroke();
+  
+  drawTextSub(c, "G", "", cx-55, cy+5, C.accent);
+  drawTextSub(c, "D", "", cx+14, cy-38, C.accent);
+  drawTextSub(c, "S", "", cx+14, cy+44, C.accent);
+}
+
+// ===================================================
+// 3. DYNAMIC CIRCUIT DRAWING ENGINES
+// ===================================================
+function drawCircuit() {
+  const W = ui.canvas.width, H = ui.canvas.height;
+  ui.ctx.clearRect(0, 0, W, H);
+  ui.ctx.lineJoin = 'round'; ui.ctx.lineCap = 'round';
+  
+  if (currentExp === 'EXP4') drawCircuit_EXP4(W, H);
+  else if (currentExp === 'EXP5') drawCircuit_EXP5(W, H);
+  else if (currentExp === 'EXP6') drawCircuit_EXP6(W, H);
+}
+
+function drawCircuit_EXP4(W, H) {
+  // مدار کاملاً بازطراحی شده و ایزوله برای تست دیودی
+  const cx = 450, cy = 135;
+  const pB = {x: cx-35, y: cy};
+  const pC = {x: cx+12, y: cy-50};
+  const pE = {x: cx+12, y: cy+50};
+  
+  drawBJT_symbol(cx, cy, currentBJTType);
+  
+  // منبع تغذیه
+  const bx = 100, by = 135;
+  ui.ctx.strokeStyle = C.wire; ui.ctx.lineWidth = 2;
+  ui.ctx.beginPath(); ui.ctx.moveTo(bx, by-20); ui.ctx.lineTo(bx, by+20); ui.ctx.stroke();
+  ui.ctx.strokeStyle = C.bjt; ui.ctx.lineWidth = 3;
+  ui.ctx.beginPath(); ui.ctx.moveTo(bx-12, by-10); ui.ctx.lineTo(bx+12, by-10); ui.ctx.stroke();
+  ui.ctx.lineWidth = 1.5;
+  ui.ctx.beginPath(); ui.ctx.moveTo(bx-7, by+10); ui.ctx.lineTo(bx+7, by+10); ui.ctx.stroke();
+  drawTextSub(ui.ctx, "+", "", bx+14, by-6, C.danger);
+  drawTextSub(ui.ctx, "−", "", bx+14, by+14, C.bjt);
+  drawTextSub(ui.ctx, "V", "in", bx-30, by+5, C.accent);
+
+  const topY = 60;
+  const botY = 210;
+
+  // منطق هوشمند ایزوله‌سازی پایه‌ها
+  let pinHigh, pinLow, pinFloat, floatLabel;
+  if(currentJunction === 'BE') { pinHigh = pB; pinLow = pE; pinFloat = pC; floatLabel = "C (باز)"; }
+  if(currentJunction === 'BC') { pinHigh = pB; pinLow = pC; pinFloat = pE; floatLabel = "E (باز)"; }
+  if(currentJunction === 'CE') { pinHigh = pC; pinLow = pE; pinFloat = pB; floatLabel = "B (باز)"; }
+
+  // مسیر بالا (مثبت)
+  drawWire([[bx, by-20], [bx, topY], [180, topY]]);
+  drawResistor(180, topY, true, "100Ω");
+  drawWire([[240, topY], [300, topY]]);
+  drawMeter(315, topY, "A", C.success);
+  drawWire([[330, topY], [pinHigh.x, topY], [pinHigh.x, pinHigh.y]]);
+  dot(pinHigh.x, pinHigh.y);
+
+  // مسیر پایین (منفی)
+  drawWire([[bx, by+20], [bx, botY], [pinLow.x, botY], [pinLow.x, pinLow.y]]);
+  dot(pinLow.x, pinLow.y);
+
+  // پایه‌ی رها و ایزوله
+  if(pinFloat === pB) {
+      drawWire([[pinFloat.x, pinFloat.y], [pinFloat.x-20, pinFloat.y]]);
+      drawTextSub(ui.ctx, floatLabel, "", pinFloat.x-55, pinFloat.y+4, C.danger);
+  } else {
+      drawWire([[pinFloat.x, pinFloat.y], [pinFloat.x+20, pinFloat.y]]);
+      drawTextSub(ui.ctx, floatLabel, "", pinFloat.x+25, pinFloat.y+4, C.danger);
+  }
+
+  // ولت‌متر منحصراً روی پایه‌های فعال
+  const vx = 650, vy = 135;
+  drawMeter(vx, vy, "V", C.warning);
+  drawWire([[pinHigh.x, pinHigh.y], [pinHigh.x, topY+20], [vx, topY+20], [vx, vy-15]]);
+  drawWire([[pinLow.x, pinLow.y], [pinLow.x, botY-20], [vx, botY-20], [vx, vy+15]]);
+  dot(pinHigh.x, topY+20); dot(pinLow.x, botY-20);
+  
+  // لیبل پایین
+  ui.ctx.save(); ui.ctx.direction = 'ltr'; ui.ctx.fillStyle = C.purple; ui.ctx.font = 'bold 13px Tahoma'; ui.ctx.textAlign='center';
+  ui.ctx.fillText(`${currentBJTType} (${currentJunction})`, cx, H-10);
+  ui.ctx.restore();
+}
+
+function drawCircuit_EXP5(W, H) {
+  const cx = W*0.52, cy = H*0.50;
+  drawBJT_symbol(cx, cy, 'NPN');
+
+  const vbbX=55, vbbY=cy+20;
+  ui.ctx.strokeStyle=C.bjt; ui.ctx.lineWidth=3;
+  ui.ctx.beginPath(); ui.ctx.moveTo(vbbX-10,vbbY); ui.ctx.lineTo(vbbX+10,vbbY); ui.ctx.stroke();
+  ui.ctx.lineWidth=1.5;
+  ui.ctx.beginPath(); ui.ctx.moveTo(vbbX-6,vbbY+8); ui.ctx.lineTo(vbbX+6,vbbY+8); ui.ctx.stroke();
+  drawWire([[vbbX, vbbY-18],[vbbX, vbbY]]);
+  drawWire([[vbbX, vbbY+8],[vbbX, vbbY+28]]);
+  drawTextSub(ui.ctx, "+", "", vbbX+12, vbbY-2, C.danger);
+  drawTextSub(ui.ctx, "V", "BB", vbbX-30, vbbY+8, C.accent);
+
+  drawWire([[vbbX, vbbY-18],[vbbX, cy-20],[120, cy-20]]);
+  drawResistor(120, cy-20, true, "47kΩ");
+  drawWire([[195, cy-20], [cx-35, cy-20], [cx-35, cy]]);
+  drawMeter(cx-35, cy-20, "A", C.success);
+  dot(cx-35, cy);
+
+  const vccX=W-60, vccY=cy-20;
+  ui.ctx.strokeStyle=C.bjt; ui.ctx.lineWidth=3;
+  ui.ctx.beginPath(); ui.ctx.moveTo(vccX-10,vccY); ui.ctx.lineTo(vccX+10,vccY); ui.ctx.stroke();
+  ui.ctx.lineWidth=1.5;
+  ui.ctx.beginPath(); ui.ctx.moveTo(vccX-6,vccY+8); ui.ctx.lineTo(vccX+6,vccY+8); ui.ctx.stroke();
+  drawWire([[vccX, vccY-18],[vccX, vccY]]);
+  drawWire([[vccX, vccY+8],[vccX, vccY+28]]);
+  drawTextSub(ui.ctx, "+", "", vccX+12, vccY-2, C.danger);
+  drawTextSub(ui.ctx, "V", "CC", vccX-30, vccY+8, C.accent);
+
+  drawWire([[vccX, vccY-18],[vccX, cy-55],[W-120, cy-55]]);
+  drawResistor(W-200, cy-55, true, "220Ω");
+  drawWire([[W-200, cy-55], [W-240, cy-55]]);
+  drawWire([[W-125, cy-55], [cx+12, cy-55], [cx+12, cy-50]]);
+  drawMeter(W-240, cy-55, "A", C.danger);
+
+  drawWire([[vbbX, vbbY+28],[vbbX, H-25],[vccX, H-25],[vccX, vccY+28]]);
+  drawWire([[cx+12, cy+50],[cx+12, H-25]]);
+  dot(cx+12, H-25);
+
+  const vmx = cx+80;
+  drawWire([[cx+12, cy-50],[vmx, cy-50]]);
+  drawWire([[cx+12, cy+50],[vmx, cy+50]]);
+  drawMeter(vmx, cy, "V", C.warning);
+  drawWire([[vmx, cy-15],[vmx, cy-50]]);
+  drawWire([[vmx, cy+15],[vmx, cy+50]]);
+  dot(vmx, cy-50); dot(vmx, cy+50);
+
+  ui.ctx.save(); ui.ctx.direction = 'ltr'; ui.ctx.fillStyle = C.purple; ui.ctx.font = 'bold 13px Tahoma'; ui.ctx.textAlign='center';
+  ui.ctx.fillText("NPN (BD137)  |  β ≈ 150", cx, H-10);
+  ui.ctx.restore();
+}
+
+function drawCircuit_EXP6(W, H) {
+  const cx = W*0.50, cy = H*0.50;
+  drawJFET_symbol(cx, cy);
+
+  const vggX=60, vggY=cy;
+  ui.ctx.strokeStyle=C.bjt; ui.ctx.lineWidth=3;
+  ui.ctx.beginPath(); ui.ctx.moveTo(vggX-10,vggY-5); ui.ctx.lineTo(vggX+10,vggY-5); ui.ctx.stroke();
+  ui.ctx.lineWidth=1.5;
+  ui.ctx.beginPath(); ui.ctx.moveTo(vggX-6,vggY+3); ui.ctx.lineTo(vggX+6,vggY+3); ui.ctx.stroke();
+  drawWire([[vggX, vggY-22],[vggX, vggY-5]]);
+  drawWire([[vggX, vggY+3],[vggX, vggY+22]]);
+  drawTextSub(ui.ctx, "+", "", vggX+12, vggY-8, C.danger);
+  drawTextSub(ui.ctx, "V", "GG", vggX-30, vggY+3, C.accent);
+
+  drawWire([[vggX, vggY-22],[vggX, cy-30],[120, cy-30]]);
+  drawResistor(120, cy-30, true, "1kΩ");
+  drawWire([[195, cy-30], [cx-38, cy-30], [cx-38, cy]]);
+  drawMeter(cx-38, cy-30, "V", C.warning);
+  dot(cx-38, cy);
+
+  const vddX=W-60, vddY=cy;
+  ui.ctx.strokeStyle=C.bjt; ui.ctx.lineWidth=3;
+  ui.ctx.beginPath(); ui.ctx.moveTo(vddX-10,vddY-5); ui.ctx.lineTo(vddX+10,vddY-5); ui.ctx.stroke();
+  ui.ctx.lineWidth=1.5;
+  ui.ctx.beginPath(); ui.ctx.moveTo(vddX-6,vddY+3); ui.ctx.lineTo(vddX+6,vddY+3); ui.ctx.stroke();
+  drawWire([[vddX, vddY-22],[vddX, vddY-5]]);
+  drawWire([[vddX, vddY+3],[vddX, vddY+22]]);
+  drawTextSub(ui.ctx, "+", "", vddX+12, vddY-8, C.danger);
+  drawTextSub(ui.ctx, "V", "DD", vddX-30, vddY+3, C.accent);
+
+  drawWire([[vddX, vddY-22],[vddX, cy-55],[W-130, cy-55]]);
+  drawResistor(W-210, cy-55, true, "100Ω");
+  drawWire([[W-210, cy-55], [W-250, cy-55]]);
+  drawWire([[W-135, cy-55], [cx+10, cy-55], [cx+10, cy-50]]);
+  drawMeter(W-250, cy-55, "A", C.success);
+
+  drawWire([[vggX, vggY+22],[vggX, H-25],[vddX, H-25],[vddX, vddY+22]]);
+  drawWire([[cx+10, cy+50],[cx+10, H-25]]);
+  dot(cx+10, H-25);
+
+  const vmx=cx+80;
+  drawWire([[cx+10, cy-50],[vmx, cy-50]]);
+  drawWire([[cx+10, cy+50],[vmx, cy+50]]);
+  drawMeter(vmx, cy, "V", C.accent);
+  drawWire([[vmx, cy-15],[vmx, cy-50]]);
+  drawWire([[vmx, cy+15],[vmx, cy+50]]);
+  dot(vmx, cy-50); dot(vmx, cy+50);
+
+  ui.ctx.save(); ui.ctx.direction = 'ltr'; ui.ctx.fillStyle = C.purple; ui.ctx.font = 'bold 13px Tahoma'; ui.ctx.textAlign='center';
+  ui.ctx.fillText("N-ch JFET (BF244)  |  Vp ≈ -3.0V  |  Idss ≈ 12mA", cx, H-10);
+  ui.ctx.restore();
+}
+
+// ===================================================
+// 4. PHYSICS ENGINE
+// ===================================================
+function runPhysics() {
+  if (currentExp === 'EXP4') physicsEXP4();
+  else if (currentExp === 'EXP5') physicsEXP5();
+  else if (currentExp === 'EXP6') physicsEXP6();
+  updateSweepTargetText();
+}
+
+function physicsEXP4() {
+  let vin = parseFloat(document.getElementById('slide_vin').value);
+  // Is=2e-14 A, n=1.0 → knee ≈ 0.64V@1mA, 0.70V@10mA (accurate silicon BJT BE junction)
+  let Is=2e-14, n=1.0, Vt=0.026, R=100;
+  let Vd=0, I=0;
+
+  if (currentJunction === 'CE') {
+    // CE is NOT a diode — no direct PN junction between C and E
+    // A tiny leakage current (ICEO) flows; modeled as ~1nA
+    Vd = vin;
+    I  = vin > 0 ? 1e-9 : 0;
+  } else {
+    if(vin > 0) {
+      // Newton-Raphson: solve Vd + Is*exp(Vd/(n*Vt))*R = vin
+      Vd = Math.min(vin, 0.70);   // good initial guess near knee
+      for(let k=0; k<40; k++){
+        let Id = Is * Math.exp(Vd/(n*Vt));
+        let f  = Vd + Id*R - vin;
+        let df = 1 + (R*Is/(n*Vt)) * Math.exp(Vd/(n*Vt));
+        let step = f/df;
+        Vd -= step;
+        if(Vd < 0) Vd = 0;
+        if(Math.abs(step) < 1e-10) break;
+      }
+      I = Is * Math.exp(Vd/(n*Vt));
+    }
+  }
+
+  let Im = I * 1000;
+  setLive('live_v',  Math.max(0, Vd).toFixed(3));
+  setLive('live_i',  Math.max(0, Im).toFixed(3));
+  setLive('live_r',  Im > 0.01 ? (Vd / I).toFixed(0) : "∞");
+  let stEl = document.getElementById('live_state');
+  if(stEl) {
+    if(currentJunction === 'CE') {
+      stEl.innerText = "مقاومت خطی (ICEO≈0)";
+      stEl.style.color = "var(--muted)";
+    } else {
+      stEl.innerText = Im > 0.1 ? "رسانش (Forward)" : "قطع (Open)";
+      stEl.style.color = Im > 0.1 ? "var(--success)" : "var(--danger)";
+    }
+  }
+}
+
+// Global forced-IB for "ALL Curves" sweep in EXP5 (null = use slider/Vbb)
+let forcedIbValue = null;
+
+function physicsEXP5() {
+  let Vbb = parseFloat(document.getElementById('slide_vbb').value);
+  let Vcc = parseFloat(document.getElementById('slide_vcc').value);
+  const Rb = 47000, Rc = 220;
+  const VCE_SAT = 0.15;       // BD137 datasheet: Vce(sat) ≈ 0.15 V
+  const Is_be = 2e-14, n_be = 1.0, Vt = 0.026;
+
+  let Ib, Vbe;
+
+  if (forcedIbValue !== null) {
+    // ALL-sweep mode: IB is forced directly (no Vbb dependency)
+    Ib  = forcedIbValue;
+    Vbe = n_be * Vt * Math.log(Ib / Is_be + 1);  // approximate Vbe for display
+    Vbe = Math.min(Vbe, 0.75);
+  } else {
+    // Normal slider mode: Newton-Raphson to solve Vbb = Vbe + Ib*Rb
+    Vbe = (Vbb > 0.3) ? 0.65 : Vbb;
+    if(Vbb > 0.3) {
+      for(let k = 0; k < 40; k++){
+        let Id = Is_be * Math.exp(Vbe / (n_be * Vt));
+        let f  = Vbe + Id * Rb - Vbb;
+        let df = 1 + (Rb * Is_be / (n_be * Vt)) * Math.exp(Vbe / (n_be * Vt));
+        let step = f / df;
+        Vbe -= step;
+        if(Vbe < 0) Vbe = 0;
+        if(Math.abs(step) < 1e-10) break;
+      }
+    }
+    Ib = Math.max(0, (Vbb - Vbe) / Rb);
+  }
+
+  let Ic = 0, Vce = Vcc;
+  if(Ib > 0 && Vcc > VCE_SAT) {
+    let Ic_active  = BJT_BETA * Ib;
+    let Ic_sat_max = (Vcc - VCE_SAT) / Rc;   // ← fixed: was Vcc/Rc (ignored Vce_sat)
+    if(Ic_active > Ic_sat_max) {
+      // Saturation region
+      Ic  = Ic_sat_max;
+      Vce = VCE_SAT;
+    } else {
+      // Active (linear) region
+      Ic  = Ic_active;
+      Vce = Vcc - Ic * Rc;
+    }
+  } else if(Ib > 0 && Vcc > 0) {
+    // Very low Vcc (< VCE_SAT): transistor barely on
+    Ic  = Vcc / Rc;
+    Vce = 0;
+  }
+
+  setLive('live_vbe', Vbe.toFixed(3));
+  setLive('live_ib',  (Ib * 1e6).toFixed(2));
+  setLive('live_vce', Math.max(0, Vce).toFixed(3));
+  setLive('live_ic',  (Ic * 1000).toFixed(3));
+}
+
+function physicsEXP6() {
+  let Vgs = parseFloat(document.getElementById('slide_vgs').value);
+  let Vdd = parseFloat(document.getElementById('slide_vdd').value);
+  const Rd = 100;  // 100 Ω drain resistor (matches circuit diagram)
+  let Id = 0, Vds = Vdd, region = "قطع";
+
+  if(Vgs > JFET_VP) {
+    // Pre-estimate Id to get a reasonable starting Vds
+    let Id_sat_est = JFET_IDSS * Math.pow(1 - (Vgs / JFET_VP), 2);
+    Vds = Math.max(0, Vdd - (Id_sat_est / 1000) * Rd);   // /1000: mA→A
+
+    for(let iter = 0; iter < 25; iter++){
+      let Vp_eff = Vgs - JFET_VP;   // = Vgs + 3 for BF244B (always positive when Vgs>Vp)
+      if(Vp_eff <= 0) { Id = 0; region = "قطع"; break; }
+
+      if(Vds >= Vp_eff) {
+        // Saturation (pinch-off) region: Id ≈ IDSS*(1 - Vgs/Vp)²
+        Id = JFET_IDSS * Math.pow(1 - (Vgs / JFET_VP), 2);
+        region = "اشباع (Saturation)";
+      } else {
+        // Ohmic (triode) region: Id = (2·IDSS/Vp²)·[(Vgs-Vp)·Vds - Vds²/2]
+        Id = (2 * JFET_IDSS / Math.pow(JFET_VP, 2)) * (Vp_eff * Vds - Vds * Vds / 2);
+        region = "اهمی (Ohmic)";
+      }
+      if(Id < 0) Id = 0;
+
+      let Vds_new = Math.max(0, Vdd - (Id / 1000) * Rd);
+      if(Math.abs(Vds_new - Vds) < 1e-6) { Vds = Vds_new; break; }
+      Vds = Vds_new;
+    }
+  }
+
+  setLive('live_vgs_disp', Vgs.toFixed(1));
+  setLive('live_vds', Math.max(0, Vds).toFixed(3));
+  setLive('live_id',  Id.toFixed(3));
+  let rg = document.getElementById('live_region');
+  if(rg) {
+    rg.innerText = region;
+    rg.style.color = region.includes("اشباع") ? "var(--warning)"
+                   : region.includes("اهمی")  ? "var(--success)"
+                   : "var(--danger)";
+  }
+}
+
+function setLive(id, val) {
+  let el = document.getElementById(id);
+  if(el) el.innerHTML = val;
+}
+
+// ===================================================
+// 5. CHART & DATA MANAGEMENT
+// ===================================================
+function initChart() {
+  const ctx2 = document.getElementById('transistorChart').getContext('2d');
+  chartInstance = new Chart(ctx2, {
+    type: 'line',
+    data: { datasets: [] },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: { duration: 0 },
+      interaction: { mode: 'index', intersect: false }, // Tooltips like Diode
+      plugins: { 
+          legend: { display: true, labels: { color:'#9ca3af', font:{family:'Tahoma', size:11}, boxWidth:14, padding:10 } },
+          tooltip: {
+              backgroundColor: 'rgba(15, 23, 42, 0.9)', titleColor: '#38bdf8', bodyColor: '#e5e7eb',
+              borderColor: '#1e293b', borderWidth: 1, padding: 10, displayColors: true
+          }
+      },
+      scales: {
+        x: { type:'linear', min:0, title:{display:true, text:"محور X", color:"#9ca3af"}, ticks:{color:"#9ca3af"}, grid:{color:"#1f2937"} },
+        y: { min:0, title:{display:true, text:"محور Y", color:"#9ca3af"}, ticks:{color:"#9ca3af"}, grid:{color:"#1f2937"} }
+      }
+    }
+  });
+}
+
+function setChartAxes(xLabel, yLabel) {
+  chartInstance.options.scales.x.title.text = xLabel;
+  chartInstance.options.scales.y.title.text = yLabel;
+  chartInstance.update();
+}
+
+function updateChartData() {
+  chartInstance.data.datasets = graphCurves.map(c => ({
+      label: c.label,
+      data: c.data,
+      borderColor: c.color,
+      backgroundColor: c.color + '33',
+      borderWidth: c.isManual ? 0 : 2.5,
+      pointRadius: c.isManual ? 6 : (c.data.length > 30 ? 0 : 3),
+      pointHoverRadius: 7,
+      showLine: !c.isManual,
+      tension: 0.3,
+      fill: currentExp === 'EXP4' && !c.isManual
+  }));
+  chartInstance.update();
+}
+
+function resetSimulation() {
+  graphCurves = []; sweepCounter = 0;
+  forcedIbValue = null;   // clear any lingering forced-IB from ALL sweep
+  if(chartInstance){ chartInstance.data.datasets=[]; chartInstance.update(); }
+  ui.tableBody.innerHTML='';
+  updateTableHeaders();
+  setChartAxesForExp();
+  ui.sweepProgress.style.width='0%';
+  ui.sweepStatus.innerText='آماده برای شروع';
+  ui.sweepPercent.innerText='0%';
+  
+  if(currentExp === 'EXP4'){
+    ui.sweepStart.value = 0; ui.sweepEnd.value = 3; ui.sweepPoints.value = 60;
+  } else {
+    ui.sweepStart.value = 0; ui.sweepEnd.value = 15; ui.sweepPoints.value = 60;
+  }
+}
+
+function setChartAxesForExp() {
+  if(!chartInstance) return;
+  // Unicode Subscripts used for Chart labels since HTML isn't supported inside canvas text directly
+  if(currentExp==='EXP4'){ setChartAxes("ولتاژ اتصال (V)", "جریان عبوری (mA)"); }
+  else if(currentExp==='EXP5'){ setChartAxes("ولتاژ کلکتور-امیتر U₍CE₎ (V)", "جریان کلکتور I₍C₎ (mA)"); }
+  else if(currentExp==='EXP6'){ setChartAxes("ولتاژ درین-سورس U₍DS₎ (V)", "جریان درین I₍D₎ (mA)"); }
+}
+
+function updateTableHeaders() {
+  let h='';
+  if(currentExp==='EXP4') h=`<tr><th>ردیف</th><th>نوع اتصال</th><th>ولتاژ U (V)</th><th>جریان I (mA)</th><th>مقاومت R (Ω)</th></tr>`;
+  if(currentExp==='EXP5') h=`<tr><th>ردیف</th><th dir="ltr">I<sub>B</sub> (µA)</th><th dir="ltr">U<sub>CE</sub> (V)</th><th dir="ltr">I<sub>C</sub> (mA)</th><th>تلفات (mW)</th></tr>`;
+  if(currentExp==='EXP6') h=`<tr><th>ردیف</th><th dir="ltr">U<sub>GS</sub> (V)</th><th dir="ltr">U<sub>DS</sub> (V)</th><th dir="ltr">I<sub>D</sub> (mA)</th><th>ناحیه کاری</th></tr>`;
+  ui.tableHead.innerHTML = h;
+}
+
+// ===================================================
+// 6. SWEEP & MANUAL RECORDING LOGIC
+// ===================================================
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+function getSweepTargetOptions() {
+    let sel = ui.sweepTargetMode;
+    sel.innerHTML = '';
+    if (currentExp === 'EXP4') {
+        sel.add(new Option(`فقط پیوند ${currentJunction} از ${currentBJTType}`, 'SINGLE'));
+        sel.add(new Option(`رسم هر دو NPN و PNP (پیوند ${currentJunction})`, 'ALL'));
+    } else if (currentExp === 'EXP5') {
+        sel.add(new Option(`فقط جریان بیس فعلی (I_B = ${document.getElementById('live_ib').innerText} µA)`, 'SINGLE'));
+        sel.add(new Option('خانواده کامل (50, 100, 150, 200, 250 µA)', 'ALL'));
+    } else if (currentExp === 'EXP6') {
+        sel.add(new Option(`فقط ولتاژ گیت فعلی (U_GS = ${parseFloat(document.getElementById('slide_vgs').value).toFixed(1)} V)`, 'SINGLE'));
+        sel.add(new Option('خانواده کامل (0, −0.5, −1.0, −1.5, −2.0, −2.5 V)', 'ALL'));
+    }
+}
+
+function updateSweepTargetText() {
+    let sel = ui.sweepTargetMode;
+    if(!sel || sel.options.length === 0) return;
+    if(currentExp === 'EXP4') {
+        sel.options[0].text = `فقط پیوند ${currentJunction} از ${currentBJTType}`;
+    } else if (currentExp === 'EXP5') {
+        sel.options[0].text = `فقط جریان بیس فعلی (I_B = ${document.getElementById('live_ib').innerText} µA)`;
+    } else if (currentExp === 'EXP6') {
+        sel.options[0].text = `فقط ولتاژ گیت فعلی (U_GS = ${parseFloat(document.getElementById('slide_vgs').value).toFixed(1)} V)`;
+    }
+}
+
+// دکمه آبی بزرگ برای ثبت نقطه‌به‌نقطه دستی
+function recordManualPoint() {
+    let manualCurve = graphCurves.find(c => c.isManual);
+    if(!manualCurve) {
+        let color = curveColors[sweepCounter % curveColors.length];
+        manualCurve = { isManual: true, label: "نقاط ثبت‌شده دستی", color: color, data: [] };
+        graphCurves.push(manualCurve);
+        sweepCounter++;
+    }
+
+    let rowNum = ui.tableBody.children.length + 1;
+
+    if (currentExp === 'EXP4') {
+        let vx = parseFloat(document.getElementById('live_v').innerText)||0;
+        let iy = parseFloat(document.getElementById('live_i').innerText)||0;
+        manualCurve.data.push({x:vx, y:iy});
+        appendTableRow([rowNum, `${currentBJTType} (${currentJunction})`, vx.toFixed(3), iy.toFixed(3), document.getElementById('live_r').innerText]);
+    } else if (currentExp === 'EXP5') {
+        let ibVal = document.getElementById('live_ib').innerText;
+        let vx = parseFloat(document.getElementById('live_vce').innerText)||0;
+        let iy = parseFloat(document.getElementById('live_ic').innerText)||0;
+        manualCurve.data.push({x:vx, y:iy});
+        appendTableRow([rowNum, ibVal, vx.toFixed(3), iy.toFixed(3), (vx*iy).toFixed(2)]);
+    } else if (currentExp === 'EXP6') {
+        let vgsVal = document.getElementById('slide_vgs').value;
+        let vx = parseFloat(document.getElementById('live_vds').innerText)||0;
+        let iy = parseFloat(document.getElementById('live_id').innerText)||0;
+        manualCurve.data.push({x:vx, y:iy});
+        let reg = document.getElementById('live_region') ? document.getElementById('live_region').innerText : '—';
+        appendTableRow([rowNum, vgsVal, vx.toFixed(3), iy.toFixed(3), reg]);
+    }
+    
+    updateChartData();
+}
+
+async function runSweep() {
+  const startV = parseFloat(ui.sweepStart.value);
+  const endV = parseFloat(ui.sweepEnd.value);
+  const numPoints = parseInt(ui.sweepPoints.value);
+  const mode = ui.sweepTargetMode.value;
+
+  if (startV >= endV) { alert('ولتاژ شروع باید کمتر از پایان باشد.'); return; }
+  if (numPoints < 2) { alert('تعداد نقاط باید حداقل 2 باشد.'); return; }
+
+  resetSimulation(); 
+
+  isSweeping = true;
+  ui.btnSweep.disabled = true;
+  ui.stopSweepBtn.disabled = false;
+  ui.sweepStatus.innerText = "در حال رسم منحنی و جمع‌آوری داده...";
+
+  if (mode === 'ALL' && currentExp === 'EXP4') {
+      currentBJTType = 'NPN'; document.getElementById('sel_bjtType').value = 'NPN'; drawCircuit();
+      await sweepCoreRoutine(startV, endV, numPoints, `NPN — ${currentJunction} Junction`);
+      if(!isSweeping) return;
+      currentBJTType = 'PNP'; document.getElementById('sel_bjtType').value = 'PNP'; drawCircuit();
+      await sweepCoreRoutine(startV, endV, numPoints, `PNP — ${currentJunction} Junction`);
+  } 
+  else if (mode === 'ALL' && currentExp === 'EXP5') {
+      // Use forcedIbValue to inject IB directly, bypassing Vbb slider
+      const ibs_uA = [50, 100, 150, 200, 250];   // µA — BD137 datasheet optimal range
+      for(let ib_uA of ibs_uA) {
+          forcedIbValue = ib_uA * 1e-6;
+          runPhysics();
+          await sweepCoreRoutine(startV, endV, numPoints, `I_B = ${ib_uA} µA`);
+          if(!isSweeping) break;
+      }
+      forcedIbValue = null;
+  } 
+  else if (mode === 'ALL' && currentExp === 'EXP6') {
+      const vgs_vals = [0, -0.5, -1.0, -1.5, -2.0, -2.5];  // BF244B datasheet: Vp≈-3V
+      for(let vgs of vgs_vals) {
+          document.getElementById('slide_vgs').value = vgs; runPhysics();
+          await sweepCoreRoutine(startV, endV, numPoints, `U_GS = ${vgs} V`);
+          if(!isSweeping) break;
+      }
+  } 
+  else {
+      let label = "";
+      if(currentExp === 'EXP4') label = `${currentBJTType} — ${currentJunction} Junction`;
+      if(currentExp === 'EXP5') label = `I₍B₎ = ${document.getElementById('live_ib').innerText} µA`;
+      if(currentExp === 'EXP6') label = `U₍GS₎ = ${parseFloat(document.getElementById('slide_vgs').value).toFixed(1)} V`;
+      await sweepCoreRoutine(startV, endV, numPoints, label);
+  }
+
+  isSweeping = false;
+  forcedIbValue = null;   // always clean up after sweep
+  ui.btnSweep.disabled = false;
+  ui.stopSweepBtn.disabled = true;
+  if (ui.sweepStatus.innerText !== "Sweep متوقف شد.") {
+    ui.sweepStatus.innerText = "رسم منحنی‌ها با موفقیت کامل شد ✓";
+  }
+}
+
+async function sweepCoreRoutine(startV, endV, numPoints, labelName) {
+  let color = curveColors[sweepCounter%curveColors.length];
+  const stepV = (endV - startV) / (numPoints - 1);
+  
+  let newCurve = { isManual: false, label: labelName, color: color, data: [] };
+  graphCurves.push(newCurve);
+  sweepCounter++;
+
+  for(let i=0; i<numPoints; i++){
+    if (!isSweeping) { ui.sweepStatus.innerText = "Sweep متوقف شد."; break; }
+    let v = startV + i * stepV;
+    
+    if (currentExp === 'EXP4') {
+        document.getElementById('slide_vin').value = v; setLive('val_vin', v.toFixed(2) + ' V');
+        physicsEXP4();
+        let vx = parseFloat(document.getElementById('live_v').innerText)||0;
+        let iy = parseFloat(document.getElementById('live_i').innerText)||0;
+        newCurve.data.push({x:vx, y:iy});
+        appendTableRow([ui.tableBody.children.length + 1, `${currentBJTType} (${currentJunction})`, vx.toFixed(3), iy.toFixed(3), document.getElementById('live_r').innerText]);
+    } 
+    else if (currentExp === 'EXP5') {
+        document.getElementById('slide_vcc').value = v; setLive('val_vcc', v.toFixed(2) + ' V');
+        physicsEXP5();
+        let vx = parseFloat(document.getElementById('live_vce').innerText)||0;
+        let iy = parseFloat(document.getElementById('live_ic').innerText)||0;
+        let ibVal = document.getElementById('live_ib').innerText;
+        newCurve.data.push({x:vx, y:iy});
+        appendTableRow([ui.tableBody.children.length + 1, ibVal, vx.toFixed(3), iy.toFixed(3), (vx*iy).toFixed(2)]);
+    } 
+    else if (currentExp === 'EXP6') {
+        document.getElementById('slide_vdd').value = v; setLive('val_vdd', v.toFixed(2) + ' V');
+        physicsEXP6();
+        let vx = parseFloat(document.getElementById('live_vds').innerText)||0;
+        let iy = parseFloat(document.getElementById('live_id').innerText)||0;
+        let vgsVal = document.getElementById('slide_vgs').value;
+        let reg = document.getElementById('live_region') ? document.getElementById('live_region').innerText : '—';
+        newCurve.data.push({x:vx, y:iy});
+        appendTableRow([ui.tableBody.children.length + 1, vgsVal, vx.toFixed(3), iy.toFixed(3), reg]);
+    }
+    
+    updateChartData(); // انیمیشن زنده (Live drawing)
+    updateProgress(i+1, numPoints);
+    await sleep(25);
+  }
+}
+
+function updateProgress(current, total) {
+  let pct = Math.round((current/total)*100);
+  ui.sweepProgress.style.width = pct+'%';
+  ui.sweepPercent.innerText = pct+'%';
+}
+
+function appendTableRow(arr) {
+  let tr = document.createElement('tr');
+  arr.forEach(v => { let td = document.createElement('td'); td.innerHTML=v; tr.appendChild(td); });
+  ui.tableBody.appendChild(tr);
+  let w = document.querySelector('.table-wrapper'); if(w) w.scrollTop = w.scrollHeight;
+}
+
+// ===================================================
+// 7. BUILD UI (Master Switcher)
+// ===================================================
+function buildUI() {
+  currentExp = ui.masterSelect.value;
+  let htmlC='', htmlL='';
+
+  ['EXP4','EXP5','EXP6'].forEach(id=>{
+    let el=document.getElementById('theory_'+id);
+    if(el) el.classList.toggle('active', id===currentExp);
+  });
+
+  if(currentExp==='EXP4'){
+    ui.panelTitle.innerText="تست خواص دیودی پیوندهای ترانزیستور";
+    ui.panelSub.innerText="بررسی رفتار اتصال‌های BE و BC مانند دیود";
+    ui.chartTitle.innerText="نمودار مشخصه ورودی";
+    ui.chartSub.innerHTML="منحنی <span dir='ltr'>I = f(U)</span> — بررسی رفتار دیودی";
+    htmlC=`
+      <div class="control-group">
+        <label class="control-label">نوع ترانزیستور</label>
+        <select id="sel_bjtType">
+          <option value="NPN">NPN (BD137)</option>
+          <option value="PNP">PNP (BD138)</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label class="control-label">پیوند مورد آزمایش</label>
+        <select id="sel_junction">
+          <option value="BE">پایه - منتشرکننده (BE)</option>
+          <option value="BC">پایه - جمع‌کننده (BC)</option>
+          <option value="CE">جمع‌کننده - منتشرکننده (CE)</option>
+        </select>
+      </div>
+      <div class="control-group" style="grid-column: 1 / -1;">
+        <label class="control-label"><span dir="ltr">ولتاژ اعمالی (V<sub>in</sub>)</span><span id="val_vin" style="color:var(--accent)">0.00 V</span></label>
+        <input type="range" id="slide_vin" min="0" max="3" value="0" step="0.02">
+      </div>`;
+    htmlL=`
+      <div class="live-box"><div class="live-label">ولتاژ اتصال (V)</div><div class="live-value" style="color:var(--warning)"><span id="live_v">0.000</span> V</div></div>
+      <div class="live-box"><div class="live-label">جریان (mA)</div><div class="live-value" style="color:var(--success)"><span id="live_i">0.000</span> mA</div></div>
+      <div class="live-box"><div class="live-label">مقاومت استاتیک</div><div class="live-value" style="color:var(--muted)"><span id="live_r">∞</span> Ω</div></div>
+      <div class="live-box"><div class="live-label">وضعیت</div><div class="live-value" id="live_state" style="color:var(--danger)">قطع</div></div>`;
+  }
+  else if(currentExp==='EXP5'){
+    ui.panelTitle.innerText="ثبت مشخصات ترانزیستور BJT — BD137 NPN";
+    ui.panelSub.innerText="استخراج مشخصه خروجی برای جریان‌های پایه مختلف";
+    ui.chartTitle.innerText="خانواده منحنی‌های مشخصه خروجی BJT";
+    ui.chartSub.innerHTML="<span dir='ltr'>I<sub>C</sub> = f(U<sub>CE</sub>)</span> — هر منحنی در یک <span dir='ltr'>I<sub>B</sub></span> ثابت رسم می‌شود";
+    htmlC=`
+      <div class="control-group">
+        <label class="control-label"><span dir="ltr">ولتاژ پایه (V<sub>BB</sub>)</span><span id="val_vbb" style="color:var(--accent)">0.70 V</span></label>
+        <input type="range" id="slide_vbb" min="0" max="15" value="0.7" step="0.05">
+      </div>
+      <div class="control-group">
+        <label class="control-label"><span dir="ltr">ولتاژ جمع‌کننده (V<sub>CC</sub>)</span><span id="val_vcc" style="color:var(--accent)">5.0 V</span></label>
+        <input type="range" id="slide_vcc" min="0" max="15" value="5" step="0.1">
+      </div>`;
+    htmlL=`
+      <div class="live-box"><div class="live-label" dir="ltr">U<sub>BE</sub> (V)</div><div class="live-value" style="color:var(--warning)"><span id="live_vbe">0.000</span> V</div></div>
+      <div class="live-box"><div class="live-label" dir="ltr">I<sub>B</sub> (µA)</div><div class="live-value" style="color:var(--success)"><span id="live_ib">0.00</span> µA</div></div>
+      <div class="live-box"><div class="live-label" dir="ltr">U<sub>CE</sub> (V)</div><div class="live-value" style="color:var(--accent)"><span id="live_vce">0.000</span> V</div></div>
+      <div class="live-box"><div class="live-label" dir="ltr">I<sub>C</sub> (mA)</div><div class="live-value" style="color:var(--danger)"><span id="live_ic">0.000</span> mA</div></div>`;
+  }
+  else if(currentExp==='EXP6'){
+    ui.panelTitle.innerText="ثبت مشخصات JFET — BF244 (N-ch)";
+    ui.panelSub.innerText="استخراج مشخصه خروجی در چند ولتاژ گیت مختلف";
+    ui.chartTitle.innerText="خانواده منحنی‌های مشخصه خروجی JFET";
+    ui.chartSub.innerHTML="<span dir='ltr'>I<sub>D</sub> = f(U<sub>DS</sub>)</span> — شامل نواحی اهمی و اشباع";
+    htmlC=`
+      <div class="control-group">
+        <label class="control-label"><span dir="ltr">ولتاژ گیت-سورس (U<sub>GS</sub>)</span><span id="val_vgs" style="color:var(--accent)">0.0 V</span></label>
+        <input type="range" id="slide_vgs" min="-4" max="0" value="0" step="0.1">
+      </div>
+      <div class="control-group">
+        <label class="control-label"><span dir="ltr">ولتاژ درین-سورس (U<sub>DD</sub>)</span><span id="val_vdd" style="color:var(--accent)">0.0 V</span></label>
+        <input type="range" id="slide_vdd" min="0" max="15" value="0" step="0.1">
+      </div>`;
+    htmlL=`
+      <div class="live-box"><div class="live-label" dir="ltr">U<sub>GS</sub> (V)</div><div class="live-value" style="color:var(--warning)"><span id="live_vgs_disp">0.0</span> V</div></div>
+      <div class="live-box"><div class="live-label" dir="ltr">U<sub>DS</sub> (V)</div><div class="live-value" style="color:var(--accent)"><span id="live_vds">0.000</span> V</div></div>
+      <div class="live-box"><div class="live-label" dir="ltr">I<sub>D</sub> (mA)</div><div class="live-value" style="color:var(--success)"><span id="live_id">0.000</span> mA</div></div>
+      <div class="live-box"><div class="live-label">ناحیه کاری</div><div class="live-value" style="font-size:12px;" id="live_region">قطع</div></div>`;
+  }
+
+  ui.controlsGrid.innerHTML = htmlC;
+  ui.liveValuesGrid.innerHTML = htmlL;
+  getSweepTargetOptions();
+  drawCircuit();
+  attachListeners();
+  updateTableHeaders();
+  setChartAxesForExp();
+  runPhysics();
+}
+
+function attachListeners() {
+  document.querySelectorAll('input[type="range"]').forEach(s=>{
+    s.addEventListener('input', e=>{
+      let id=e.target.id, v=parseFloat(e.target.value).toFixed(2);
+      if(id==='slide_vin')  setLive('val_vin', v+' V');
+      if(id==='slide_vbb')  setLive('val_vbb', v+' V');
+      if(id==='slide_vcc')  setLive('val_vcc', v+' V');
+      if(id==='slide_vgs')  setLive('val_vgs', v+' V');
+      if(id==='slide_vdd')  setLive('val_vdd', v+' V');
+      runPhysics();
+    });
+  });
+  
+  let stype = document.getElementById('sel_bjtType');
+  if(stype) stype.addEventListener('change', e => { currentBJTType = e.target.value; drawCircuit(); runPhysics(); getSweepTargetOptions(); });
+  
+  let sjunc = document.getElementById('sel_junction');
+  if(sjunc) sjunc.addEventListener('change', e => { currentJunction = e.target.value; drawCircuit(); runPhysics(); getSweepTargetOptions(); });
+}
+
+// ===================================================
+// INIT & EVENT BINDINGS
+// ===================================================
+ui.masterSelect.addEventListener('change', ()=>{ buildUI(); resetSimulation(); });
+ui.btnClear.addEventListener('click', resetSimulation);
+ui.btnSweep.addEventListener('click', runSweep);
+ui.stopSweepBtn.addEventListener('click', () => {
+  isSweeping = false;
+  ui.btnSweep.disabled = false;
+  ui.stopSweepBtn.disabled = true;
+  ui.sweepStatus.innerText = "در حال توقف...";
+});
+ui.btnRecordPoint.addEventListener('click', recordManualPoint);
+
+window.addEventListener('load', ()=>{
+  initChart();
+  buildUI();
+  resetSimulation();
+});
+</script>
+</body>
+</html>

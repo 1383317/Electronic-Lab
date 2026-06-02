@@ -1,0 +1,34 @@
+{
+  "name": "electronlab",
+  "version": "1.0.0",
+  "description": "آزمایشگاه الکترونیک",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^34.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.electronlab.app",
+    "productName": "ElectronLab",
+    "win": {
+      "target": "nsis",
+      "icon": "app/credit/IUST.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
+    },
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "app/**/*"
+    ]
+  }
+}

@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>شبیه‌ساز مشخصه جریان-ولتاژ دیود زنر</title>
+  
+  <script src="js/chart.umd.js"></script>
+  
+  <style>
+    @font-face {
+      font-family: 'XB Niloofar';
+      src: url('Fonts/XB Niloofar.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    :root {
+      --bg-color: #0f172a;
+      --panel-bg: #020617;
+      --card-bg: #1e293b;
+      --accent: #10b981; 
+      --accent-soft: #34d399;
+      --text-main: #e5e7eb;
+      --muted: #9ca3af;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'XB Niloofar', sans-serif;
+      margin: 0;
+      padding: 20px 10px 40px;
+      background: radial-gradient(circle at top, #1f2937 0, #020617 55%, #020617 100%);
+      color: var(--text-main);
+      direction: rtl;
+      overflow-x: hidden;
+    }
+
+    h1, h2, h3, h4 { margin: 0; font-weight: 600; }
+
+    .page-header { text-align: center; margin-bottom: 20px; margin-top: 25px;}
+    .page-header h1 { font-size: 22px; color: #f8fafc;}
+    .page-header .subtitle { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+    .creator-credit {
+      position: absolute; top: 15px; left: 20px; display: flex; align-items: center; gap: 10px;
+      background: rgba(15, 23, 42, 0.7); padding: 6px 14px; border-radius: 10px; border: 1px solid #1f2937;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); z-index: 1000;
+    }
+    .creator-credit img { height: 45px; width: auto; object-fit: contain; }
+    .creator-credit span { color: #9ca3af; font-size: 15px; font-family: monospace; direction: ltr; font-weight: bold; letter-spacing: 1px; }
+
+    .lab-info {
+      position: absolute; top: 12px; right: 20px; display: flex; flex-direction: column; align-items: center; 
+      background: rgba(15, 23, 42, 0.7); padding: 5px 15px; border-radius: 10px; border: 1px solid #1f2937;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); z-index: 1000; text-align: center; 
+    }
+    .lab-info .title { color: #f8fafc; font-size: 18px; font-weight: bold; line-height: 1.3; display: block; }
+    .lab-info .prof { color: #9ca3af; font-size: 13px; margin-top: 1px; display: block; }
+
+    .main-container { display: flex; flex-direction: column; gap: 16px; max-width: 750px; margin: 0 auto; }
+
+    .card {
+      background: radial-gradient(circle at top left, #020617 0, #020617 45%, #020617 100%); border-radius: 13px; 
+      border: 1px solid #1f2937; padding: 16px; box-shadow: 0 14px 28px rgba(15, 23, 42, 0.85);
+    }
+    .card-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
+    .card-header h3 { font-size: 15px; color: #f8fafc; }
+    .card-header .sub { font-size: 11px; color: var(--muted); }
+
+    .sim-container {
+      background: radial-gradient(circle at top, #020617 0, #020617 60%, #020617 100%);
+      border-radius: 14px; border: 1px solid #1e293b; box-shadow: 0 0 0 1px #0b1120, 0 18px 35px rgba(15, 23, 42, 0.9), 0 0 120px rgba(16, 185, 129, 0.18);
+      padding: 16px; position: relative;
+    }
+    
+    .sim-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .sim-status { font-size: 12px; display: flex; align-items: center; gap: 6px; color: var(--muted); }
+    .status-led { width: 10px; height: 10px; border-radius: 50%; background: #ef4444; box-shadow: 0 0 8px rgba(248, 113, 113, 0.8); }
+    .status-led.on { background: #10b981; box-shadow: 0 0 10px rgba(16, 185, 129, 0.85); }
+
+    #simCanvas { display: block; width: 100%; max-width: 700px; height: auto; background: transparent; border: none; margin: 0 auto; }
+
+    .controls-grid { display: grid; grid-template-columns: 1fr; gap: 10px; font-size: 12px; }
+    .control-row { display: grid; grid-template-columns: 90px minmax(100px, 1fr) 70px; align-items: center; gap: 8px; }
+    .control-label { color: var(--muted); font-size: 12px; }
+    .control-output { text-align: left; font-variant-numeric: tabular-nums; direction: ltr; font-size: 12px; color: var(--accent-soft); }
+
+    input[type="range"] { width: 100%; -webkit-appearance: none; height: 5px; border-radius: 999px; background: #0f172a; outline: none; direction: ltr; }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 15px; height: 15px; border-radius: 50%;
+      background: var(--accent); border: 1px solid #34d399; box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25); cursor: pointer;
+    }
+
+    .live-values { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+    .live-box { background: #020617; border-radius: 8px; border: 1px solid #1f2937; padding: 8px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .live-label { color: var(--muted); font-size: 11px; }
+    .live-value { font-variant-numeric: tabular-nums; direction: ltr; font-size: 14px; font-weight: bold; }
+    .live-value.u { color: #facc15; }
+    .live-value.i { color: #10b981; }
+    .live-value.p { color: #fb923c; }
+
+    .charts-row { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 6px; }
+    .chart-box { height: 320px; background: #020617; border-radius: 9px; border: 1px solid #111827; padding: 10px; display: flex; flex-direction: column; }
+    .chart-top-bar { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+    .chart-title { font-size: 12px; color: var(--muted); }
+    .chart-title span { color: var(--accent-soft); }
+    .chart-legend { font-size: 11px; color: #9ca3af; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .canvas-container { position: relative; flex: 1; width: 100%; }
+    canvas.chart { position: absolute; inset: 0; width: 100% !important; height: 100% !important; }
+
+    .data-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px; }
+    .data-toolbar-right { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    
+    .btn {
+      border: 1px solid #10b981; background: radial-gradient(circle at top, #059669 0, #047857 30%, #1e293b 100%);
+      color: #e5e7eb; border-radius: 999px; padding: 6px 14px; font-size: 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: 0.2s;
+    }
+    .btn:hover { opacity: 0.9; }
+    .btn.secondary { border-color: #4b5563; background: #1e293b; box-shadow: none; }
+
+    .table-wrapper {
+      max-height: 250px;
+      overflow-y: auto;
+      border-radius: 7px;
+      border: 1px solid #111827;
+      background: #020617;
+    }
+    
+    .table-wrapper::-webkit-scrollbar { width: 8px; }
+    .table-wrapper::-webkit-scrollbar-track { background: #0f172a; }
+    .table-wrapper::-webkit-scrollbar-thumb { background: #34d399; border-radius: 10px; }
+
+    table.data-table { width: 100%; border-collapse: collapse; background: #020617; }
+    table.data-table th, table.data-table td { border-bottom: 1px solid #111827; text-align: center; padding: 6px; font-variant-numeric: tabular-nums; }
+    
+    table.data-table th { 
+      font-size: 11px; color: #9ca3af; background: #0f172a; 
+      position: sticky; top: 0; z-index: 10;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    }
+    
+    table.data-table td { font-size: 12px; color: #e5e7eb; }
+    table.data-table tbody tr:hover { background: rgba(16, 185, 129, 0.15); }
+
+    .theory-box p { font-size: 13px; color: #9ca3af; line-height: 1.8; margin: 8px 0; text-align: justify; }
+    .theory-box ul { list-style-type: none; padding-right: 0; margin-top: 10px; }
+    .theory-box ul li { font-size: 13px; color: #9ca3af; line-height: 1.8; position: relative; padding-right: 18px; margin-bottom: 8px; text-align: justify; }
+    .theory-box ul li::before { content: "🔹"; position: absolute; right: 0; top: 2px; font-size: 10px; }
+    .theory-box strong { color: #f8fafc; }
+    .theory-section-title { font-size: 14px; font-weight: bold; color: #38bdf8; margin-top: 15px; margin-bottom: 5px; border-bottom: 1px solid #1f2937; padding-bottom: 5px;}
+
+    @media (max-width: 600px) {
+        .creator-credit, .lab-info { position: static; margin: 0 auto 10px; justify-content: center; width: max-content; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="creator-credit">
+    <span>credit:@MSR_83</span>
+    <img src="credit/IUST.png" alt="University Logo">
+  </div>
+  <div class="lab-info">
+    <span class="title">آزمایشگاه الکترونیک</span>
+    <span class="prof">استاد : دکتر دباغ کاشانی</span>
+  </div>
+
+  <div class="page-header">
+    <h1>ثبت مشخصه‌های جریان-ولتاژ دیود زنر</h1>
+    <div class="subtitle">
+      بررسی اثر شکست زنر و بهمنی در دیودهای ZPD 6.2 و ZPD 9.1
+    </div>
+  </div>
+
+  <div class="main-container">
+    
+    <div class="sim-container">
+      <div class="sim-header">
+        <div style="font-size: 14px; font-weight: bold; color: #f8fafc;">نمای شماتیک مدار (جهت حرکت الکترون‌ها)</div>
+        <div class="sim-status">
+          <div class="status-led" id="statusLed"></div>
+          <span id="statusText">مدار خاموش</span>
+        </div>
+      </div>
+      <canvas id="simCanvas" width="700" height="380"></canvas>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h3>کنترل مدار و منبع تغذیه</h3>
+          <div class="sub">تنظیم ولتاژ معکوس برای شکست و مستقیم برای هدایت</div>
+        </div>
+      </div>
+
+      <div class="controls-grid">
+        <div class="control-row">
+          <div class="control-label">ولتاژ منبع (V)</div>
+          <input type="range" id="emfSlider" min="-12" max="2" value="0" step="0.01">
+          <div class="control-output"><span id="emfValue">0.00</span> V</div>
+        </div>
+    
+        <div class="control-row">
+          <div class="control-label">مدل دیود زنر</div>
+          <select id="diodeSelector" style="width: 100%; padding: 4px; border-radius: 999px; background: #0f172a; color: #10b981; border: 1px solid #1f2937; outline: none; font-family: inherit; font-size: 11px;">
+            <option value="ZPD6.2">ZPD 6.2 (شکست ۶.۲ ولت)</option>
+            <option value="ZPD9.1">ZPD 9.1 (شکست ۹.۱ ولت)</option>
+          </select>
+          <div class="control-output"></div>
+        </div>
+
+        <div class="control-row">
+          <div class="control-label">وضعیت اتصال</div>
+          <div>
+            <button class="btn" id="toggleCircuitBtn" style="width: 100%; justify-content: center;">
+              <span class="btn-icon">⏻</span>
+              <span>روشن / خاموش</span>
+            </button>
+          </div>
+          <div class="control-output">
+            <span id="circuitStateLabel">مدار باز است</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="live-values">
+        <div class="live-box">
+            <div class="live-label">ولتاژ دیود (Vd)</div>
+            <div class="live-value u"><span id="diodeVoltageValue">0.000</span> V</div>
+        </div>
+        <div class="live-box">
+          <div class="live-label">جریان مدار (I)</div>
+          <div class="live-value i"><span id="currentValue">0.000</span> mA</div>
+        </div>
+        <div class="live-box">
+          <div class="live-label">ولتاژ مقاومت (VR)</div>
+          <div class="live-value p"><span id="voltageValue">0.00</span> V</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h3>نمودار مشخصه جریان-ولتاژ (I-V)</h3>
+        </div>
+      </div>
+      <div class="charts-row">
+        <div class="chart-box">
+          <div class="chart-top-bar">
+            <div class="chart-title">نمودار <span>I بر حسب Vd</span></div>
+            <div class="chart-legend">
+              <div class="legend-dot" style="background: #10b981;"></div><span>ZPD 6.2</span>
+              <div class="legend-dot" style="background: #8b5cf6;"></div><span>ZPD 9.1</span>
+            </div>
+          </div>
+          <div class="canvas-container">
+            <canvas class="chart" id="diodeChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h3>جمع‌آوری خودکار داده‌ها (Sweep)</h3>
+          <div class="sub">تعیین بازه ولتاژ برای رسم منحنی شکست زنر</div>
+        </div>
+      </div>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+        <div>
+          <label style="color: var(--muted); font-size: 12px; display: block; margin-bottom: 5px;">ولتاژ شروع (V)</label>
+          <input type="number" id="sweepStart" value="-12" min="-12" max="2" step="0.1" style="width: 100%; padding: 6px; border-radius: 8px; background: #0f172a; color: #e5e7eb; border: 1px solid #1f2937; outline: none; direction: ltr;">
+        </div>
+        <div>
+          <label style="color: var(--muted); font-size: 12px; display: block; margin-bottom: 5px;">ولتاژ پایان (V)</label>
+          <input type="number" id="sweepEnd" value="2" min="-12" max="2" step="0.1" style="width: 100%; padding: 6px; border-radius: 8px; background: #0f172a; color: #e5e7eb; border: 1px solid #1f2937; outline: none; direction: ltr;">
+        </div>
+      </div>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+        <div>
+          <label style="color: var(--muted); font-size: 12px; display: block; margin-bottom: 5px;">تعداد نقاط</label>
+          <input type="number" id="sweepPoints" value="40" min="5" max="500" style="width: 100%; padding: 6px; border-radius: 8px; background: #0f172a; color: #e5e7eb; border: 1px solid #1f2937; outline: none;">
+        </div>
+        <div>
+          <label style="color: var(--muted); font-size: 12px; display: block; margin-bottom: 5px;">انتخاب دیود</label>
+          <select id="sweepDiodeSelect" style="width: 100%; padding: 6px; border-radius: 8px; background: #0f172a; color: #10b981; border: 1px solid #1f2937; outline: none;">
+            <option value="both">هر دو دیود</option>
+            <option value="ZPD6.2">ZPD 6.2</option>
+            <option value="ZPD9.1">ZPD 9.1</option>
+          </select>
+        </div>
+      </div>
+      
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button class="btn" id="startSweepBtn" style="background: radial-gradient(circle at top, #7c3aed 0, #6d28d9 30%, #1e293b 100%); border-color: #8b5cf6;">
+          <span>⚡</span>
+          <span>شروع Sweep خودکار</span>
+        </button>
+        <button class="btn secondary" id="stopSweepBtn" disabled>
+          <span>⏹</span>
+          <span>توقف</span>
+        </button>
+      </div>
+      
+      <div style="margin-top: 12px;">
+        <div style="display: flex; justify-content: space-between; color: var(--muted); font-size: 11px;">
+          <span id="sweepProgressText">آماده برای شروع</span>
+          <span id="sweepPercent">0%</span>
+        </div>
+        <div style="width: 100%; height: 4px; background: #0f172a; border-radius: 999px; margin-top: 5px; overflow: hidden;">
+          <div id="sweepProgressBar" style="width: 0%; height: 100%; background: #8b5cf6; border-radius: 999px; transition: width 0.1s;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card data-card">
+      <div class="card-header">
+        <div>
+          <h3>جدول ثبت داده‌ها</h3>
+        </div>
+        <div class="data-toolbar">
+          <div class="data-toolbar-right">
+            <button class="btn" id="addPointBtn">
+              <span class="btn-icon">✚</span>
+              <span>ثبت نقطه فعلی</span>
+            </button>
+            <button class="btn secondary" id="clearDataBtn">
+              <span class="btn-icon">🗑</span>
+              <span>پاک‌کردن داده‌ها</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="table-wrapper" id="tableWrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ردیف</th>
+              <th>نوع دیود</th>
+              <th>Vs (V)</th>
+              <th>Vd (V)</th>
+              <th>I (mA)</th>
+            </tr>
+          </thead>
+          <tbody id="dataTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h3>تئوری و دستورالعمل آزمایش</h3>
+        </div>
+      </div>
+      <div class="theory-box">
+        <div class="theory-section-title">فیزیک پیوند p-n و لایه تخلیه</div>
+        <ul>
+            <li>دیودهای نیم‌رسانا از اتصال دو ناحیه با رسانندگی متفاوت (نوع n و نوع p) تشکیل می‌شوند. بازترکیب حامل‌ها در محل اتصال، یک ناحیه عاری از حامل‌های آزاد به نام <strong>«لایه تخلیه»</strong> (Depletion Region) ایجاد می‌کند.</li>
+        </ul>
+
+        <div class="theory-section-title">بایاس معکوس و مکانیزم‌های شکست</div>
+        <ul>
+            <li>با اعمال ولتاژ معکوس، عرض لایه تخلیه افزایش می‌یابد. با رسیدن ولتاژ به حد آستانه، پیوند دچار شکست الکتریکی شده و جریان به صورت نمایی و ناگهانی افزایش می‌یابد.</li>
+            <li><strong>اثر زنر (Zener Effect):</strong> در دیودهایی با ناخالصی بالا (ولتاژ شکست عموماً زیر ۵ ولت)، لایه تخلیه بسیار باریک است. میدان الکتریکی شدید باعث «تونل‌زنی کوانتومی» الکترون‌ها از باند ظرفیت به باند هدایت می‌شود.</li>
+            <li><strong>اثر بهمنی (Avalanche Effect):</strong> در دیودهایی با ناخالصی کمتر (ولتاژ شکست عموماً بالای ۵ ولت)، حامل‌های اقلیت تحت تاثیر میدان شتاب گرفته و با شبکه بلوری برخورد می‌کنند. این «یونیزاسیون برخوردی» تولید زوج الکترون-حفره‌های جدید را به شکل زنجیره‌وار در پی دارد.</li>
+        </ul>
+
+        <div class="theory-section-title">نحوه انجام آزمایش</div>
+        <p>در این شبیه‌ساز، ولتاژ منبع (V<sub>S</sub>) را در بازه مجاز مدار (از <strong>۱۲- تا ۲+ ولت</strong>) تغییر دهید تا آسیب حرارتی به قطعات وارد نشود. برای رسم منحنی شکست، از مقادیر منفی (بایاس معکوس) شروع کرده و ولتاژ را به تدریج افزایش دهید. در هر مرحله مقادیر ولتاژ دو سر دیود (V<sub>D</sub>) و جریان عبوری (I) را در جدول ثبت نمایید. توجه داشته باشید که دیود ZPD 9.1 عمدتاً در ناحیه شکست بهمنی عمل می‌کند، در حالی که دیود ZPD 6.2 ترکیبی از هر دو پدیده زنر و بهمنی را به نمایش می‌گذارد.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const diodeParams = {
+        "ZPD6.2": { Is: 1e-11, n: 1.2, Vt: 0.026, BV: 6.2, Ibv: 5e-3, nbv: 0.1 },
+        "ZPD9.1": { Is: 1e-12, n: 1.3, Vt: 0.026, BV: 9.1, Ibv: 5e-3, nbv: 0.1 }
+    };
+
+    let diodeType = "ZPD6.2";
+    let isCircuitClosed = false;
+    const R = 150; 
+
+    const emfSlider = document.getElementById('emfSlider');
+    const diodeSelector = document.getElementById('diodeSelector');
+    const emfValue = document.getElementById('emfValue');
+    const diodeVoltageDisplay = document.getElementById('diodeVoltageValue');
+    const currentDisplay = document.getElementById('currentValue');
+    const voltageDisplay = document.getElementById('voltageValue');
+    const statusLed = document.getElementById('statusLed');
+    const statusText = document.getElementById('statusText');
+    const toggleBtn = document.getElementById('toggleCircuitBtn');
+    const circuitStateLabel = document.getElementById('circuitStateLabel');
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    const tableWrapper = document.getElementById('tableWrapper');
+
+    let emf = parseFloat(emfSlider.value);
+    let current_A = 0;
+    let voltageR = 0;
+    let diodeVoltage = 0;
+    let electrons = [];
+
+    diodeSelector.addEventListener('change', function(e) {
+        diodeType = e.target.value;
+        updateValues();
+    });
+
+    toggleBtn.onclick = function() {
+        isCircuitClosed = !isCircuitClosed;
+        circuitStateLabel.innerText = isCircuitClosed ? "مدار بسته است" : "مدار باز است";
+        updateValues();
+    };
+
+    emfSlider.oninput = updateValues;
+
+    function solveZenerCurrent(Vs, R, diode) {
+        const { Is, n, Vt, BV, Ibv, nbv } = diode;
+        const tol = 1e-6;
+        const maxIter = 100;
+
+        let Vd = Vs;
+        if (Vs > 0.6) Vd = 0.6;
+        if (Vs < -BV) Vd = -BV - 0.1;
+
+        for (let iter = 0; iter < maxIter; iter++) {
+            let argFwd = Vd / (n * Vt);
+            let argRev = -(Vd + BV) / (nbv * Vt);
+            
+            if (argFwd > 50) argFwd = 50; 
+            if (argRev > 50) argRev = 50;
+
+            let expFwd = Math.exp(argFwd);
+            let expRev = Math.exp(argRev);
+
+            let Id = Is * (expFwd - 1) - Ibv * expRev;
+            let f = Vd + Id * R - Vs;
+            let df = 1 + R * ( (Is / (n * Vt)) * expFwd + (Ibv / (nbv * Vt)) * expRev );
+
+            let step = f / df;
+            if (step > 0.5) step = 0.5;
+            if (step < -0.5) step = -0.5;
+
+            Vd -= step;
+            if (Math.abs(f) < tol) break;
+        }
+
+        let argFwdFinal = Math.min(Vd / (n * Vt), 50);
+        let argRevFinal = Math.min(-(Vd + BV) / (nbv * Vt), 50);
+        let I = Is * (Math.exp(argFwdFinal) - 1) - Ibv * Math.exp(argRevFinal);
+        
+        return { I, Vd };
+    }
+
+    function updateValues() {
+        emf = parseFloat(emfSlider.value);
+        emfValue.innerText = (emf > 0 ? "+" : "") + emf.toFixed(2) + " V";
+
+        if (isCircuitClosed) {
+            let result = solveZenerCurrent(emf, R, diodeParams[diodeType]);
+            current_A = result.I;
+            diodeVoltage = result.Vd;
+            voltageR = current_A * R;
+        } else {
+            current_A = 0;
+            diodeVoltage = 0;
+            voltageR = 0;
+        }
+
+        let current_mA = current_A * 1000;
+        diodeVoltageDisplay.innerText = diodeVoltage.toFixed(3);
+        currentDisplay.innerText = current_mA.toFixed(3);
+        voltageDisplay.innerText = voltageR.toFixed(2);
+
+        if (isCircuitClosed && Math.abs(current_mA) > 0.001) {
+            statusLed.classList.add("on");
+            statusText.innerText = "مدار فعال";
+        } else {
+            statusLed.classList.remove("on");
+            statusText.innerText = isCircuitClosed ? "مدار بسته (جریان نشتی)" : "مدار خاموش";
+        }
+    }
+
+    function createElectrons() {
+        electrons = [];
+        for (let i = 0; i < 45; i++) electrons.push({ t: Math.random() });
+    }
+    createElectrons();
+
+    function drawTerminal(x, y, label, offsetX = -6, offsetY = -10) {
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.fillStyle = "#1f2937"; ctx.fill();
+        ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1; ctx.stroke();
+        if(label) {
+            ctx.fillStyle = "#e5e7eb"; 
+            ctx.font = "bold 16px XB Niloofar"; 
+            ctx.fillText(label, x + offsetX, y + offsetY); 
+        }
+    }
+
+    function drawWire() {
+        ctx.strokeStyle = "#A07A5A"; ctx.lineWidth = 3; ctx.beginPath();
+        ctx.moveTo(150, 110); ctx.lineTo(320, 110);
+        ctx.moveTo(380, 110); ctx.lineTo(550, 110);
+        ctx.moveTo(550, 110); ctx.lineTo(550, 170);
+        ctx.moveTo(550, 250); ctx.lineTo(550, 310);
+        ctx.moveTo(550, 310); ctx.lineTo(150, 310);
+        ctx.moveTo(150, 310); ctx.lineTo(150, 215);
+        ctx.moveTo(150, 195); ctx.lineTo(150, 110);
+        ctx.stroke();
+
+        drawTerminal(150, 110, "C", -6, -12);
+        drawTerminal(550, 110, "A", -6, -12);
+        drawTerminal(550, 310, "B", -6, 22);
+        drawTerminal(150, 310, "D", -6, 22);
+        drawTerminal(320, 110, ""); drawTerminal(380, 110, "");
+        
+        ctx.beginPath(); ctx.lineWidth = 3;
+        ctx.strokeStyle = isCircuitClosed ? "#10b981" : "#9ca3af";
+        if (isCircuitClosed) {
+            ctx.moveTo(320, 110); ctx.lineTo(380, 110);
+        } else {
+            ctx.moveTo(320, 110); ctx.lineTo(370, 75);
+        }
+        ctx.stroke();
+    }
+
+    function drawResistor() {
+        ctx.strokeStyle = "#14b8a6"; ctx.lineWidth = 3; ctx.lineJoin = "round";
+        let startX = 550, startY = 170, endY = 250;
+        let width = 15, zigzags = 5, step = (endY - startY) / zigzags;
+        ctx.beginPath(); ctx.moveTo(startX, startY);
+        for (let i = 0; i < zigzags; i++) {
+            let xOffset = (i % 2 === 0) ? width : -width;
+            ctx.lineTo(startX + xOffset, startY + (i + 0.5) * step);
+        }
+        ctx.lineTo(startX, endY); ctx.stroke();
+        ctx.fillStyle = "#e5e7eb"; ctx.font = "16px XB Niloofar"; 
+        // تنظیم دستی در اینجا: x + offsetX
+        ctx.fillText("R = 150 Ω", startX + 100, 215); 
+    }
+
+    function drawBattery() {
+        let isReversed = emf < 0;
+
+        ctx.font = "bold 20px XB Niloofar"; 
+        
+        if (isReversed) {
+            // بایاس معکوس (شکست زنر): ولتاژ بالا مثبت است
+            // خط بالا: بلند، نازک، قرمز (+)
+            ctx.strokeStyle = "#ef4444"; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(130, 195); ctx.lineTo(170, 195); ctx.stroke();
+            
+            // خط پایین: کوتاه، ضخیم، آبی (-)
+            ctx.strokeStyle = "#3b82f6"; ctx.lineWidth = 7;
+            ctx.beginPath(); ctx.moveTo(140, 215); ctx.lineTo(160, 215); ctx.stroke();
+
+            // علامت‌های کنار باتری
+            ctx.fillStyle = "#ef4444"; ctx.fillText("+", 185, 200);   
+            ctx.fillStyle = "#3b82f6"; ctx.fillText("-", 185, 222);   
+        } else {
+            // بایاس مستقیم: ولتاژ پایین مثبت است
+            // خط بالا: کوتاه، ضخیم، آبی (-)
+            ctx.strokeStyle = "#3b82f6"; ctx.lineWidth = 7;
+            ctx.beginPath(); ctx.moveTo(140, 195); ctx.lineTo(160, 195); ctx.stroke();
+            
+            // خط پایین: بلند، نازک، قرمز (+)
+            ctx.strokeStyle = "#ef4444"; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(130, 215); ctx.lineTo(170, 215); ctx.stroke();
+
+            // علامت‌های کنار باتری
+            ctx.fillStyle = "#3b82f6"; ctx.fillText("-", 185, 200);   
+            ctx.fillStyle = "#ef4444"; ctx.fillText("+", 185, 222);   
+        }
+
+        ctx.fillStyle = "#e5e7eb"; ctx.font = "italic 16px XB Niloofar"; 
+        ctx.fillText("Vs", 120, 210); 
+    }
+
+    function drawDiode() {
+        let x = 460, y = 110;
+        ctx.clearRect(x - 20, y - 10, 40, 20);
+        
+        ctx.beginPath(); ctx.moveTo(x + 15, y - 15); ctx.lineTo(x - 15, y); ctx.lineTo(x + 15, y + 15);
+        ctx.closePath(); ctx.fillStyle = "#10b981"; ctx.fill();
+        ctx.strokeStyle = "#10b981"; ctx.lineWidth = 2; ctx.stroke();
+
+        ctx.beginPath(); 
+        ctx.moveTo(x - 15, y - 15); ctx.lineTo(x - 15, y + 15);
+        ctx.moveTo(x - 15, y - 15); ctx.lineTo(x - 5, y - 15); 
+        ctx.moveTo(x - 15, y + 15); ctx.lineTo(x - 25, y + 15);
+        ctx.strokeStyle = "#e5e7eb"; ctx.lineWidth = 2; ctx.stroke();
+
+        ctx.fillStyle = "#8b5cf6"; ctx.font = "16px XB Niloofar"; 
+        // تنظیم دستی در اینجا: x + offsetX
+        ctx.fillText(diodeType, x + 30, y - 30); 
+    }
+
+    function electronPosition(t) {
+        let totalLength = 1200;
+        let d = (t % 1) * totalLength;
+        let x, y, visible = true;
+        if (d < 400) {
+            x = 150 + d; y = 110;
+            if (!isCircuitClosed && x > 320 && x < 380) visible = false;
+        } else if (d < 600) {
+            x = 550; y = 110 + (d - 400);
+            if (y > 170 && y < 250) visible = false;
+        } else if (d < 1000) {
+            x = 550 - (d - 600); y = 310;
+        } else {
+            x = 150; y = 310 - (d - 1000);
+            if (y > 175 && y < 235) visible = false;
+        }
+        return { x, y, visible };
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawWire(); drawResistor(); drawBattery(); drawDiode();
+        
+        let current_mA = current_A * 1000;
+        if (isCircuitClosed && Math.abs(current_mA) > 0.05) {
+            let speed = current_mA * 0.0005; 
+            
+            electrons.forEach(e => {
+                e.t += speed;
+                if (e.t > 1) e.t -= 1;
+                if (e.t < 0) e.t += 1;
+                
+                let pos = electronPosition(e.t);
+                if (pos.visible) {
+                    ctx.beginPath();
+                    ctx.arc(pos.x, pos.y, 3.5, 0, Math.PI * 2);
+                    ctx.fillStyle = "#60a5fa";
+                    ctx.shadowBlur = 8; ctx.shadowColor = "#38bdf8";
+                    ctx.fill(); ctx.shadowBlur = 0;
+                }
+            });
+        }
+        requestAnimationFrame(animate);
+    }
+
+    updateValues();
+    animate();
+
+    const recordBtn = document.getElementById('addPointBtn');
+    const clearBtn = document.getElementById('clearDataBtn');
+    const dataTableBody = document.getElementById('dataTableBody');
+
+    let recordedData = { "ZPD6.2": [], "ZPD9.1": [] };
+    let myChart;
+
+    function initChart() {
+        const ctxChart = document.getElementById('diodeChart').getContext('2d');
+        myChart = new Chart(ctxChart, {
+            type: 'line',
+            data: {
+                datasets: [
+                    {
+                        label: 'ZPD 6.2',
+                        data: [],
+                        borderColor: '#10b981', backgroundColor: '#10b981',
+                        pointRadius: 4, pointHoverRadius: 6, 
+                        showLine: true, tension: 0.2
+                    },
+                    {
+                        label: 'ZPD 9.1',
+                        data: [],
+                        borderColor: '#8b5cf6', backgroundColor: '#8b5cf6',
+                        pointRadius: 4, pointHoverRadius: 6, 
+                        showLine: true, tension: 0.2
+                    }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: {
+                        type: 'linear', position: 'bottom',
+                        title: { display: true, text: "ولتاژ دیود [Vd] (V)", color: "#9ca3af" },
+                        ticks: { color: "#9ca3af" }, grid: { color: "#1f2937" }
+                    },
+                    y: {
+                        title: { display: true, text: "جریان [I] (mA)", color: "#9ca3af" },
+                        ticks: { color: "#9ca3af" }, grid: { color: "#1f2937" }
+                    }
+                }
+            }
+        });
+    }
+    initChart();
+
+    function updateChartData() {
+        myChart.data.datasets[0].data = recordedData["ZPD6.2"];
+        myChart.data.datasets[1].data = recordedData["ZPD9.1"];
+        
+        myChart.data.datasets[0].pointRadius = recordedData["ZPD6.2"].length <= 21 ? 4 : 0;
+        myChart.data.datasets[1].pointRadius = recordedData["ZPD9.1"].length <= 21 ? 4 : 0;
+        
+        myChart.update();
+    }
+
+    recordBtn.onclick = function() {
+        if (!isCircuitClosed) return;
+
+        let current_mA = current_A * 1000;
+        let row = document.createElement("tr");
+        let n = dataTableBody.children.length + 1;
+        row.innerHTML = `
+            <td>${n}</td>
+            <td style="color: ${diodeType === 'ZPD6.2' ? '#10b981' : '#8b5cf6'}">${diodeType}</td>
+            <td dir="ltr">${emf.toFixed(2)}</td>
+            <td dir="ltr">${diodeVoltage.toFixed(3)}</td>
+            <td dir="ltr">${current_mA.toFixed(2)}</td>
+        `;
+        dataTableBody.appendChild(row);
+
+        tableWrapper.scrollTop = tableWrapper.scrollHeight;
+
+        recordedData[diodeType].push({ x: diodeVoltage, y: current_mA });
+        recordedData[diodeType].sort((a, b) => a.x - b.x);
+
+        updateChartData();
+    };
+
+    clearBtn.onclick = function() {
+        recordedData = { "ZPD6.2": [], "ZPD9.1": [] };
+        dataTableBody.innerHTML = '';
+        updateChartData();
+    };
+
+    // Sweep خودکار
+    let isSweeping = false;
+
+    const startSweepBtn = document.getElementById('startSweepBtn');
+    const stopSweepBtn = document.getElementById('stopSweepBtn');
+    const sweepProgressText = document.getElementById('sweepProgressText');
+    const sweepPercent = document.getElementById('sweepPercent');
+    const sweepProgressBar = document.getElementById('sweepProgressBar');
+
+    function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+    async function runSweep() {
+        const startV = parseFloat(document.getElementById('sweepStart').value);
+        const endV = parseFloat(document.getElementById('sweepEnd').value);
+        const numPoints = parseInt(document.getElementById('sweepPoints').value);
+        const sweepDiode = document.getElementById('sweepDiodeSelect').value;
+        
+        if (startV >= endV) { alert('ولتاژ شروع باید کمتر از ولتاژ پایان باشد.'); return; }
+        if (numPoints < 2) { alert('تعداد نقاط باید حداقل 2 باشد.'); return; }
+        
+        clearBtn.click();
+        
+        isSweeping = true;
+        startSweepBtn.disabled = true;
+        stopSweepBtn.disabled = false;
+        
+        const wasCircuitClosed = isCircuitClosed;
+        const prevDiode = diodeType;
+        
+        if (!isCircuitClosed) {
+            isCircuitClosed = true;
+            circuitStateLabel.innerText = "مدار بسته است";
+        }
+        
+        let diodesToSweep = sweepDiode === 'both' ? ['ZPD6.2', 'ZPD9.1'] : [sweepDiode];
+        const step = (endV - startV) / (numPoints - 1);
+        
+        for (let dIdx = 0; dIdx < diodesToSweep.length; dIdx++) {
+            const currentDiode = diodesToSweep[dIdx];
+            diodeType = currentDiode;
+            diodeSelector.value = currentDiode;
+            
+            sweepProgressText.innerText = `Sweep دیود ${currentDiode}...`;
+            
+            for (let i = 0; i < numPoints; i++) {
+                if (!isSweeping) {
+                    sweepProgressText.innerText = "Sweep متوقف شد.";
+                    break;
+                }
+                
+                const V = startV + i * step;
+                emfSlider.value = V;
+                updateValues();
+                
+                let current_mA = current_A * 1000;
+                
+                let row = document.createElement("tr");
+                let n = dataTableBody.children.length + 1;
+                row.innerHTML = `
+                    <td>${n}</td>
+                    <td style="color: ${diodeType === 'ZPD6.2' ? '#10b981' : '#8b5cf6'}">${diodeType}</td>
+                    <td dir="ltr">${V.toFixed(2)}</td>
+                    <td dir="ltr">${diodeVoltage.toFixed(3)}</td>
+                    <td dir="ltr">${current_mA.toFixed(3)}</td>
+                `;
+                dataTableBody.appendChild(row);
+                
+                tableWrapper.scrollTop = tableWrapper.scrollHeight;
+                
+                recordedData[diodeType].push({ x: diodeVoltage, y: current_mA });
+                recordedData[diodeType].sort((a, b) => a.x - b.x);
+                
+                updateChartData();
+                
+                const totalProgress = ((dIdx * numPoints + i + 1) / (diodesToSweep.length * numPoints)) * 100;
+                sweepPercent.innerText = totalProgress.toFixed(0) + '%';
+                sweepProgressBar.style.width = totalProgress + '%';
+                
+                await sleep(30);
+            }
+            if (!isSweeping) break;
+        }
+        
+        if (!wasCircuitClosed) {
+            isCircuitClosed = false;
+            circuitStateLabel.innerText = "مدار باز است";
+        }
+        diodeType = prevDiode;
+        diodeSelector.value = prevDiode;
+        updateValues();
+        
+        isSweeping = false;
+        startSweepBtn.disabled = false;
+        stopSweepBtn.disabled = true;
+        
+        if (sweepProgressText.innerText !== "Sweep متوقف شد.") {
+            sweepProgressText.innerText = "Sweep با موفقیت کامل شد.";
+        }
+    }
+
+    startSweepBtn.addEventListener('click', runSweep);
+    stopSweepBtn.addEventListener('click', function() {
+        isSweeping = false;
+        startSweepBtn.disabled = false;
+        stopSweepBtn.disabled = true;
+        sweepProgressText.innerText = "در حال توقف...";
+    });
+  </script>
+</body>
+</html>
